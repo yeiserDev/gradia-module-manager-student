@@ -12,6 +12,7 @@ require('./src/models/associations');
 // Importar rutas
 const cursoEstudianteRoutes = require('./src/routes/cursoEstudianteRoutes');
 const entregaEstudianteRoutes = require('./src/routes/entregaEstudianteRoutes');
+const evaluacionEstudianteRoutes = require('./src/routes/evaluacionEstudianteRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001; // Puerto diferente al docente (3000)
@@ -39,6 +40,7 @@ app.use((req, res, next) => {
 // Rutas para estudiantes
 app.use('/api/student/cursos', cursoEstudianteRoutes);
 app.use('/api/student/entregas', entregaEstudianteRoutes);
+app.use('/api/student/evaluaciones', evaluacionEstudianteRoutes);
 
 // ==========================================
 // RUTAS BÁSICAS

@@ -1,13 +1,19 @@
 // src/models/associations.js - VISTA ESTUDIANTE
 // ================================================
 // Solo incluye las relaciones necesarias para estudiantes
+// MIGRACIÓN SIN SESIONES - Actividad conecta directamente con Unidad
 
 const Curso = require('./Curso');
 const Unidad = require('./Unidad');
-const Sesion = require('./Sesion');
 const Actividad = require('./Actividad');
 const Entrega = require('./Entrega');
 const ArchivoEntrega = require('./ArchivoEntrega');
+const Evaluacion = require('./Evaluacion');
+const DetalleEvaluacion = require('./DetalleEvaluacion');
+const Rubrica = require('./Rubrica');
+const Criterio = require('./Criterio');
+const NivelCriterio = require('./NivelCriterio');
+const RubricaCriterio = require('./RubricaCriterio');
 
 // ==========================================
 // RELACIONES BÁSICAS DE LA JERARQUÍA
@@ -23,24 +29,14 @@ Unidad.belongsTo(Curso, {
   as: 'curso'
 });
 
-// Unidad → Sesion
-Unidad.hasMany(Sesion, {
+// Unidad → Actividad (SIN SESIONES - Conexión directa)
+Unidad.hasMany(Actividad, {
   foreignKey: 'id_unidad',
-  as: 'sesiones'
-});
-Sesion.belongsTo(Unidad, {
-  foreignKey: 'id_unidad',
-  as: 'unidad'
-});
-
-// Sesion → Actividad
-Sesion.hasMany(Actividad, {
-  foreignKey: 'id_sesion',
   as: 'actividades'
 });
-Actividad.belongsTo(Sesion, {
-  foreignKey: 'id_sesion',
-  as: 'sesion'
+Actividad.belongsTo(Unidad, {
+  foreignKey: 'id_unidad',
+  as: 'unidad'
 });
 
 // ==========================================
@@ -68,13 +64,88 @@ ArchivoEntrega.belongsTo(Entrega, {
 });
 
 // ==========================================
+// RELACIONES DE EVALUACIONES
+// ==========================================
+
+// Entrega → Evaluacion
+Entrega.hasOne(Evaluacion, {
+  foreignKey: 'id_entrega',
+  as: 'evaluacion'
+});
+Evaluacion.belongsTo(Entrega, {
+  foreignKey: 'id_entrega',
+  as: 'entrega'
+});
+
+// Evaluacion → DetalleEvaluacion
+Evaluacion.hasMany(DetalleEvaluacion, {
+  foreignKey: 'id_evaluacion',
+  as: 'detalles'
+});
+DetalleEvaluacion.belongsTo(Evaluacion, {
+  foreignKey: 'id_evaluacion',
+  as: 'evaluacion'
+});
+
+// Actividad → Rubrica
+Actividad.belongsTo(Rubrica, {
+  foreignKey: 'id_rubrica',
+  as: 'rubrica'
+});
+Rubrica.hasMany(Actividad, {
+  foreignKey: 'id_rubrica',
+  as: 'actividades'
+});
+
+// Rubrica ↔ Criterio (relación N:M a través de RubricaCriterio)
+Rubrica.belongsToMany(Criterio, {
+  through: RubricaCriterio,
+  foreignKey: 'id_rubrica',
+  otherKey: 'id_criterio',
+  as: 'criterios'
+});
+Criterio.belongsToMany(Rubrica, {
+  through: RubricaCriterio,
+  foreignKey: 'id_criterio',
+  otherKey: 'id_rubrica',
+  as: 'rubricas'
+});
+
+// Criterio → NivelCriterio
+Criterio.hasMany(NivelCriterio, {
+  foreignKey: 'id_criterio',
+  as: 'niveles'
+});
+NivelCriterio.belongsTo(Criterio, {
+  foreignKey: 'id_criterio',
+  as: 'criterio'
+});
+
+// DetalleEvaluacion → Criterio
+DetalleEvaluacion.belongsTo(Criterio, {
+  foreignKey: 'id_criterio',
+  as: 'criterio'
+});
+
+// DetalleEvaluacion → NivelCriterio
+DetalleEvaluacion.belongsTo(NivelCriterio, {
+  foreignKey: 'id_nivel_criterio',
+  as: 'nivel'
+});
+
+// ==========================================
 // EXPORTAR MODELOS CONFIGURADOS
 // ==========================================
 module.exports = {
   Curso,
   Unidad,
-  Sesion,
   Actividad,
   Entrega,
-  ArchivoEntrega
+  ArchivoEntrega,
+  Evaluacion,
+  DetalleEvaluacion,
+  Rubrica,
+  Criterio,
+  NivelCriterio,
+  RubricaCriterio
 };

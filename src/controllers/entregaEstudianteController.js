@@ -1,5 +1,6 @@
 // src/controllers/entregaEstudianteController.js
-const { Actividad, Entrega, ArchivoEntrega, Sesion, Unidad, Curso } = require('../models/associations');
+const { Actividad, Entrega, ArchivoEntrega, Unidad, Curso } = require('../models/associations');
+const sequelize = require('../config/database');
 
 const entregaEstudianteController = {
 
@@ -17,21 +18,14 @@ const entregaEstudianteController = {
             attributes: ['id_actividad', 'nombre_actividad', 'fecha_limite', 'tipo_actividad'],
             include: [
               {
-                model: Sesion,
-                as: 'sesion',
-                attributes: ['titulo_sesion'],
+                model: Unidad,
+                as: 'unidad',
+                attributes: ['titulo_unidad'],
                 include: [
                   {
-                    model: Unidad,
-                    as: 'unidad',
-                    attributes: ['titulo_unidad'],
-                    include: [
-                      {
-                        model: Curso,
-                        as: 'curso',
-                        attributes: ['nombre_curso']
-                      }
-                    ]
+                    model: Curso,
+                    as: 'curso',
+                    attributes: ['nombre_curso']
                   }
                 ]
               }
@@ -110,21 +104,14 @@ const entregaEstudianteController = {
             as: 'actividad',
             include: [
               {
-                model: Sesion,
-                as: 'sesion',
-                attributes: ['titulo_sesion'],
+                model: Unidad,
+                as: 'unidad',
+                attributes: ['titulo_unidad'],
                 include: [
                   {
-                    model: Unidad,
-                    as: 'unidad',
-                    attributes: ['titulo_unidad'],
-                    include: [
-                      {
-                        model: Curso,
-                        as: 'curso',
-                        attributes: ['nombre_curso']
-                      }
-                    ]
+                    model: Curso,
+                    as: 'curso',
+                    attributes: ['nombre_curso']
                   }
                 ]
               }
@@ -424,12 +411,41 @@ const entregaEstudianteController = {
         }
       }
 
-      // Eliminar archivos asociados primero
+      // Eliminar registros asociados en orden (evitar FK constraint)
+
+      // 1. Eliminar comentarios asociados (si existen)
+      await sequelize.query(
+        'DELETE FROM actividades.comentario WHERE id_entrega = :entregaId',
+        {
+          replacements: { entregaId },
+          type: sequelize.QueryTypes.DELETE
+        }
+      );
+
+      // 2. Eliminar detalles de evaluación (si existen)
+      await sequelize.query(
+        'DELETE FROM evaluaciones.detalle_evaluacion WHERE id_evaluacion IN (SELECT id_evaluacion FROM evaluaciones.evaluacion WHERE id_entrega = :entregaId)',
+        {
+          replacements: { entregaId },
+          type: sequelize.QueryTypes.DELETE
+        }
+      );
+
+      // 3. Eliminar evaluaciones (si existen)
+      await sequelize.query(
+        'DELETE FROM evaluaciones.evaluacion WHERE id_entrega = :entregaId',
+        {
+          replacements: { entregaId },
+          type: sequelize.QueryTypes.DELETE
+        }
+      );
+
+      // 4. Eliminar archivos asociados
       await ArchivoEntrega.destroy({
         where: { id_entrega: entregaId }
       });
 
-      // Eliminar la entrega
+      // 5. Finalmente eliminar la entrega
       await entrega.destroy();
 
       res.status(200).json({

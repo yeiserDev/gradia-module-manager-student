@@ -1,5 +1,5 @@
 // src/controllers/cursoEstudianteController.js
-const { Curso, Unidad, Sesion, Actividad, Entrega } = require('../models/associations');
+const { Curso, Unidad, Actividad, Entrega } = require('../models/associations');
 
 const cursoEstudianteController = {
   
@@ -14,16 +14,9 @@ const cursoEstudianteController = {
             as: 'unidades',
             include: [
               {
-                model: Sesion,
-                as: 'sesiones',
-                include: [
-                  {
-                    model: Actividad,
-                    as: 'actividades',
-                    attributes: ['id_actividad', 'nombre_actividad', 'fecha_limite', 'tipo_actividad']
-                  }
-                ],
-                attributes: ['id_sesion', 'titulo_sesion', 'numero_sesion']
+                model: Actividad,
+                as: 'actividades',
+                attributes: ['id_actividad', 'nombre_actividad', 'fecha_limite', 'tipo_actividad']
               }
             ],
             attributes: ['id_unidad', 'titulo_unidad', 'numero_unidad']
@@ -36,7 +29,7 @@ const cursoEstudianteController = {
         order: [
           ['nombre_curso', 'ASC'],
           [{ model: Unidad, as: 'unidades' }, 'numero_unidad', 'ASC'],
-          [{ model: Unidad, as: 'unidades' }, { model: Sesion, as: 'sesiones' }, 'numero_sesion', 'ASC']
+          [{ model: Unidad, as: 'unidades' }, { model: Actividad, as: 'actividades' }, 'created_at', 'ASC']
         ]
       });
 
@@ -46,15 +39,9 @@ const cursoEstudianteController = {
           const totalActividades = await Actividad.count({
             include: [
               {
-                model: Sesion,
-                as: 'sesion',
-                include: [
-                  {
-                    model: Unidad,
-                    as: 'unidad',
-                    where: { id_curso: curso.id_curso }
-                  }
-                ]
+                model: Unidad,
+                as: 'unidad',
+                where: { id_curso: curso.id_curso }
               }
             ]
           });
@@ -97,21 +84,15 @@ const cursoEstudianteController = {
             as: 'unidades',
             include: [
               {
-                model: Sesion,
-                as: 'sesiones',
-                include: [
-                  {
-                    model: Actividad,
-                    as: 'actividades'
-                  }
-                ]
+                model: Actividad,
+                as: 'actividades'
               }
             ]
           }
         ],
         order: [
           [{ model: Unidad, as: 'unidades' }, 'numero_unidad', 'ASC'],
-          [{ model: Unidad, as: 'unidades' }, { model: Sesion, as: 'sesiones' }, 'numero_sesion', 'ASC']
+          [{ model: Unidad, as: 'unidades' }, { model: Actividad, as: 'actividades' }, 'created_at', 'ASC']
         ]
       });
 
@@ -146,22 +127,14 @@ const cursoEstudianteController = {
       const actividades = await Actividad.findAll({
         include: [
           {
-            model: Sesion,
-            as: 'sesion',
-            attributes: ['titulo_sesion', 'numero_sesion'],
-            include: [
-              {
-                model: Unidad,
-                as: 'unidad',
-                where: { id_curso: cursoId },
-                attributes: ['titulo_unidad', 'numero_unidad']
-              }
-            ]
+            model: Unidad,
+            as: 'unidad',
+            where: { id_curso: cursoId },
+            attributes: ['titulo_unidad', 'numero_unidad']
           }
         ],
         order: [
-          [{ model: Sesion, as: 'sesion' }, { model: Unidad, as: 'unidad' }, 'numero_unidad', 'ASC'],
-          [{ model: Sesion, as: 'sesion' }, 'numero_sesion', 'ASC'],
+          [{ model: Unidad, as: 'unidad' }, 'numero_unidad', 'ASC'],
           ['created_at', 'ASC']
         ]
       });
@@ -217,22 +190,15 @@ const cursoEstudianteController = {
       const actividades = await Actividad.findAll({
         include: [
           {
-            model: Sesion,
-            as: 'sesion',
-            attributes: ['titulo_sesion'],
+            model: Unidad,
+            as: 'unidad',
+            attributes: ['titulo_unidad'],
             include: [
               {
-                model: Unidad,
-                as: 'unidad',
-                attributes: ['titulo_unidad'],
-                include: [
-                  {
-                    model: Curso,
-                    as: 'curso',
-                    attributes: ['nombre_curso'],
-                    where: { estado: 'activo' }
-                  }
-                ]
+                model: Curso,
+                as: 'curso',
+                attributes: ['nombre_curso'],
+                where: { estado: 'activo' }
               }
             ]
           }
