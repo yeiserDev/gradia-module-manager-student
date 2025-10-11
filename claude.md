@@ -1,5 +1,15 @@
 # GradIA - Module Manager Student
 
+## 📖 Documentación del Proyecto
+
+Este proyecto cuenta con **2 archivos de documentación principales**:
+
+1. **[DOCUMENTACION_API.md](DOCUMENTACION_API.md)** - Guía práctica con ejemplos de uso, requests/responses completos (para desarrolladores implementando el frontend)
+2. **[ENDPOINTS_BACKEND_ESTUDIANTE.md](ENDPOINTS_BACKEND_ESTUDIANTE.md)** - Referencia rápida de arquitectura y estructura del sistema (para team leads y arquitectos)
+3. **Este archivo (CLAUDE.md)** - Instrucciones detalladas para desarrollo y mantenimiento del backend
+
+---
+
 ## Descripción del Proyecto
 API Backend para el sistema de gestión académica GradIA desde la perspectiva del **estudiante**. Sistema funcional con 10 endpoints operativos que permiten visualizar cursos, unidades, actividades y gestionar entregas de tareas.
 
@@ -276,25 +286,46 @@ Para obtener relaciones anidadas:
 ## 📊 SCHEMAS DE BASE DE DATOS (Compartidos con Backend Docente)
 
 ### Schema: `cursos`
-- `curso` - Información de cursos
-- `unidad` - Unidades de cada curso
-- ~~`sesion`~~ - ❌ ELIMINADA - Ya no se usa en la BD
+- ✅ `curso` - Información de cursos (READ-ONLY para estudiantes)
+- ✅ `unidad` - Unidades de cada curso (READ-ONLY)
 
 ### Schema: `actividades`
-- `actividad` - Tareas/actividades (conectadas directamente a Unidad mediante `id_unidad`)
-- `entrega` - Entregas de estudiantes
-- `archivo_entrega` - Archivos adjuntos a entregas
-- `comentario` - Comentarios de docentes (futuro: vista estudiante)
-- `documento_actividad` - Materiales de apoyo (futuro: vista estudiante)
+- ✅ `actividad` - Tareas/actividades (READ-ONLY, conectadas a `unidad` mediante `id_unidad`)
+- ✅ `entrega` - Entregas de estudiantes (FULL CRUD para estudiantes)
+- ✅ `archivo_entrega` - Archivos adjuntos a entregas (FULL CRUD)
+- ✅ `comentario` - Comentarios de docentes sobre entregas (READ-ONLY, futuro)
+- ✅ `documento_actividad` - Materiales de apoyo de actividades (READ-ONLY, futuro)
 
-### Schema: `evaluaciones` (Futuro)
-- `rubrica` - Rúbricas de evaluación
-- `criterio` - Criterios de evaluación
-- `evaluacion` - Evaluaciones de entregas (futuro: ver calificaciones)
+### Schema: `evaluaciones`
+- ✅ `rubrica` - Rúbricas de evaluación (READ-ONLY, futuro)
+- ✅ `criterio` - Criterios de evaluación (READ-ONLY, futuro)
+- ✅ `rubrica_criterio` - Relación rúbrica-criterio (READ-ONLY, futuro)
+- ✅ `nivel_criterio` - Niveles de desempeño por criterio (READ-ONLY, futuro)
+- ✅ `evaluacion` - Evaluaciones de entregas (READ-ONLY, futuro: ver calificaciones)
+- ✅ `evaluacion_documento` - Documentos de evaluación (READ-ONLY, futuro)
 
-### Schema: `grupos` (Futuro)
-- `grupo` - Grupos para actividades grupales
-- `miembro_grupo` - Miembros de cada grupo
+### Schema: `grupos`
+- ✅ `grupo` - Grupos para actividades grupales (READ-ONLY, futuro)
+- ✅ `miembro_grupo` - Miembros de cada grupo (READ-ONLY, futuro)
+
+### Schema: `usuario`
+- ✅ `usuario` - Información de usuarios (estudiantes y docentes)
+
+### Schema: `refresh_token`
+- ✅ `refresh_token` - Tokens de refresh para autenticación (futuro: JWT)
+
+### Schema: `emision_detectada`
+- ✅ `emision_detectada` - Registro de emisiones detectadas (sistema de monitoreo)
+
+### Schema: `permisos` (Sistema de permisos)
+- ✅ `permiso` - Definición de permisos del sistema
+- ✅ `rol_permiso` - Relación rol-permiso
+- ✅ `rol` - Roles de usuario (estudiante, docente, admin)
+
+**⚠️ IMPORTANTE:**
+- La tabla `sesion` fue **ELIMINADA** de la BD
+- Las actividades ahora se conectan **directamente** con unidades mediante `id_unidad`
+- Todos los schemas están **compartidos** con el backend docente (misma BD en Render)
 
 ---
 

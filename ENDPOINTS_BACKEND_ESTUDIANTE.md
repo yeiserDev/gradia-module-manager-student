@@ -1,794 +1,271 @@
-# 📚 DOCUMENTACIÓN COMPLETA - ENDPOINTS BACKEND ESTUDIANTE
+# 📚 BACKEND ESTUDIANTE - REFERENCIA RÁPIDA
 
-**Proyecto:** GradIA - Module Manager Student
-**Versión:** 1.0.0
-**Puerto:** 3001
-**Base URL:** `http://localhost:3001`
-**Total de Endpoints:** 10
-**Arquitectura:** Curso → Unidad → Actividad (sin sesiones)
-
----
-
-## 📑 ÍNDICE
-
-1. [Visualización de Cursos (4 endpoints)](#1-visualización-de-cursos)
-2. [Gestión de Entregas (6 endpoints)](#2-gestión-de-entregas)
+## 📌 Información del Proyecto
+- **Proyecto:** GradIA - Module Manager Student
+- **Versión:** 1.0.0
+- **Puerto:** 3001
+- **Base URL:** `http://localhost:3001`
+- **Base de Datos:** PostgreSQL en Render.com (compartida con backend docente)
+- **Total de Endpoints:** 10 funcionales
 
 ---
 
-## 1. VISUALIZACIÓN DE CURSOS
+## 🏗️ ARQUITECTURA
 
-### 1.1 Obtener Todos Mis Cursos
+### Backend Docente vs Backend Estudiante
 
-**Descripción:** Obtiene todos los cursos activos disponibles con su jerarquía completa (unidades → actividades) y estadísticas.
+| Aspecto | Backend Docente | Backend Estudiante |
+|---------|----------------|-------------------|
+| **Puerto** | 3000 | 3001 |
+| **Arquitectura** | Curso → Unidad → Actividad | Curso → Unidad → Actividad |
+| **Base de Datos** | PostgreSQL (Render) | **Misma BD** (Render) |
+| **Enfoque** | CRUD completo (gestión) | READ + Entregas (visualización) |
+| **Cursos** | Crear, editar, eliminar | Solo visualizar |
+| **Actividades** | Crear, editar, eliminar | Solo visualizar y entregar |
+| **Entregas** | Ver todas (modo supervisor) | Solo ver y gestionar las propias |
+| **Total endpoints** | 62 | 10 |
 
-**Endpoint:** `GET /api/student/cursos`
-
-**Query Parameters:**
-- Ninguno (por ahora muestra todos los cursos activos, futuro: filtrar por inscripciones)
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id_curso": 1,
-      "nombre_curso": "Programación Avanzada",
-      "descripcion": "Curso de algoritmos y estructuras de datos",
-      "estado": "activo",
-      "unidades": [
-        {
-          "id_unidad": 1,
-          "titulo_unidad": "Unidad 1: Ordenamiento",
-          "numero_unidad": 1,
-          "actividades": [
-            {
-              "id_actividad": 1,
-              "nombre_actividad": "Tarea 1",
-              "fecha_limite": "2025-12-31T23:59:59.000Z",
-              "tipo_actividad": "individual"
-            }
-          ]
-        }
-      ],
-      "estadisticas": {
-        "total_unidades": 4,
-        "total_actividades": 12
-      }
-    }
-  ],
-  "message": "Cursos obtenidos exitosamente"
-}
+### Jerarquía de Datos
 ```
-
-**Características:**
-- Solo muestra cursos con `estado: 'activo'`
-- Ordenado alfabéticamente por nombre de curso
-- Incluye jerarquía completa: Curso → Unidad → Actividad
-- Calcula estadísticas automáticamente
-- Unidades ordenadas por `numero_unidad`
-- Actividades ordenadas por `created_at`
-
----
-
-### 1.2 Obtener Detalle de un Curso Específico
-
-**Descripción:** Obtiene el detalle completo de un curso específico con toda su estructura jerárquica.
-
-**Endpoint:** `GET /api/student/cursos/:cursoId`
-
-**URL Parameters:**
-- `cursoId` (integer, requerido) - ID del curso
-
-**Ejemplo:** `GET /api/student/cursos/1`
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id_curso": 1,
-    "nombre_curso": "Programación Avanzada",
-    "descripcion": "Curso de algoritmos y estructuras de datos",
-    "estado": "activo",
-    "id_usuario": 1,
-    "created_at": "2025-09-16T12:00:00.000Z",
-    "updated_at": "2025-09-16T12:00:00.000Z",
-    "unidades": [
-      {
-        "id_unidad": 1,
-        "titulo_unidad": "Unidad 1: Ordenamiento",
-        "descripcion": "Algoritmos de ordenamiento",
-        "numero_unidad": 1,
-        "actividades": [
-          {
-            "id_actividad": 1,
-            "nombre_actividad": "Implementar Bubble Sort",
-            "descripcion": "Implementar el algoritmo en JavaScript",
-            "fecha_limite": "2025-10-15T23:59:59.000Z",
-            "tipo_actividad": "individual",
-            "id_rubrica": null
-          }
-        ]
-      }
-    ]
-  },
-  "message": "Detalle del curso obtenido exitosamente"
-}
-```
-
-**Error 404:**
-```json
-{
-  "success": false,
-  "message": "Curso no encontrado"
-}
+CURSO (Vista)
+  └── UNIDAD (Vista)
+       └── ACTIVIDAD (Vista - Conexión directa)
+            └── ENTREGA (Gestión completa)
+                 └── ARCHIVOS (Múltiples versiones)
 ```
 
 ---
 
-### 1.3 Obtener Actividades de un Curso Específico
+## 📋 ENDPOINTS IMPLEMENTADOS (10)
 
-**Descripción:** Obtiene todas las actividades de un curso específico con información de estado, prioridad y días restantes.
+### 1️⃣ VISUALIZACIÓN DE CURSOS (4 endpoints)
 
-**Endpoint:** `GET /api/student/cursos/:cursoId/actividades`
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/student/cursos` | Ver todos mis cursos activos | ⚠️ Simulada |
+| GET | `/api/student/cursos/:cursoId` | Detalle completo de un curso | ⚠️ Simulada |
+| GET | `/api/student/cursos/:cursoId/actividades` | Actividades de un curso con estado | ⚠️ Simulada |
+| GET | `/api/student/cursos/actividades/pendientes` | Dashboard de actividades urgentes | ⚠️ Simulada |
 
-**URL Parameters:**
-- `cursoId` (integer, requerido) - ID del curso
-
-**Ejemplo:** `GET /api/student/cursos/1/actividades`
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "actividades": [
-      {
-        "id_actividad": 1,
-        "nombre_actividad": "Implementar Bubble Sort",
-        "descripcion": "Implementar el algoritmo en JavaScript",
-        "fecha_limite": "2025-10-15T23:59:59.000Z",
-        "tipo_actividad": "individual",
-        "id_unidad": 1,
-        "id_usuario": 1,
-        "id_rubrica": null,
-        "created_at": "2025-09-16T12:00:00.000Z",
-        "updated_at": "2025-09-16T12:00:00.000Z",
-        "unidad": {
-          "titulo_unidad": "Unidad 1: Ordenamiento",
-          "numero_unidad": 1
-        },
-        "estado_para_estudiante": "pendiente",
-        "dias_restantes": 5
-      },
-      {
-        "id_actividad": 2,
-        "nombre_actividad": "Quiz de Ordenamiento",
-        "fecha_limite": "2025-10-05T23:59:59.000Z",
-        "tipo_actividad": "individual",
-        "estado_para_estudiante": "vencida",
-        "dias_restantes": -5
-      }
-    ],
-    "estadisticas": {
-      "total": 12,
-      "pendientes": 8,
-      "vencidas": 4,
-      "individuales": 10,
-      "grupales": 2
-    }
-  },
-  "message": "Actividades del curso obtenidas exitosamente"
-}
-```
-
-**Características:**
-- `estado_para_estudiante`: "pendiente" o "vencida" (calculado en tiempo real)
-- `dias_restantes`: Días hasta la fecha límite (negativos si ya venció)
-- Incluye información de unidad
-- Estadísticas agrupadas por estado y tipo
-- Ordenado por unidad → fecha de creación
+**Características especiales:**
+- ✅ Solo muestra cursos activos
+- ✅ Calcula `dias_restantes` en tiempo real
+- ✅ Asigna `prioridad` automática (urgente, alta, media, normal)
+- ✅ Muestra `estado_para_estudiante` (pendiente, vencida)
+- ✅ Estadísticas agregadas por curso
 
 ---
 
-### 1.4 Obtener Actividades Pendientes (Globales)
+### 2️⃣ GESTIÓN DE ENTREGAS (6 endpoints)
 
-**Descripción:** Obtiene todas las actividades pendientes de TODOS los cursos activos, ordenadas por fecha límite. Ideal para dashboard principal.
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/student/entregas/dashboard` | Estadísticas personales del estudiante | ⚠️ Simulada |
+| GET | `/api/student/entregas` | Historial completo de mis entregas | ⚠️ Simulada |
+| GET | `/api/student/entregas/:entregaId` | Detalle de una entrega específica | ⚠️ Simulada |
+| POST | `/api/student/entregas` | Crear nueva entrega (enviar tarea) | ⚠️ Simulada |
+| PUT | `/api/student/entregas/:entregaId` | Actualizar entrega (nuevo intento) | ⚠️ Simulada |
+| DELETE | `/api/student/entregas/:entregaId` | Eliminar entrega (antes de fecha límite) | ⚠️ Simulada |
 
-**Endpoint:** `GET /api/student/cursos/actividades/pendientes`
-
-**Query Parameters:**
-- Ninguno
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id_actividad": 5,
-      "nombre_actividad": "Proyecto Final",
-      "descripcion": "Proyecto integrador del curso",
-      "fecha_limite": "2025-10-12T23:59:59.000Z",
-      "tipo_actividad": "grupal",
-      "unidad": {
-        "titulo_unidad": "Unidad 4: Proyecto Final",
-        "curso": {
-          "nombre_curso": "Programación Avanzada"
-        }
-      },
-      "dias_restantes": 2,
-      "prioridad": "alta"
-    },
-    {
-      "id_actividad": 3,
-      "nombre_actividad": "Tarea de Estructuras",
-      "fecha_limite": "2025-10-20T23:59:59.000Z",
-      "tipo_actividad": "individual",
-      "dias_restantes": 10,
-      "prioridad": "media"
-    },
-    {
-      "id_actividad": 8,
-      "nombre_actividad": "Lectura Opcional",
-      "fecha_limite": null,
-      "tipo_actividad": "individual",
-      "dias_restantes": null,
-      "prioridad": "normal"
-    }
-  ],
-  "message": "Actividades pendientes obtenidas exitosamente"
-}
-```
-
-**Características:**
-- Solo incluye actividades futuras o sin fecha límite
-- Ordenado por fecha límite ascendente (más urgentes primero)
-- `prioridad`: Calculada automáticamente
-  - "urgente": ≤ 1 día
-  - "alta": ≤ 3 días
-  - "media": ≤ 7 días
-  - "normal": > 7 días o sin fecha límite
-- Incluye información completa de curso → unidad
-- Filtra solo cursos con `estado: 'activo'`
+**Características especiales:**
+- ✅ Validación de fecha límite
+- ✅ Prevención de duplicados en actividades individuales
+- ✅ Permite múltiples intentos (num_intento)
+- ✅ Calcula `puntualidad` (a_tiempo, tardio)
+- ✅ Información adicional: `puede_reenviar`, `dias_diferencia`
+- ✅ Versionado de archivos por intento
 
 ---
 
-## 2. GESTIÓN DE ENTREGAS
+## 🔐 VALIDACIONES POR ENDPOINT
 
-### 2.1 Dashboard Personal del Estudiante
-
-**Descripción:** Obtiene estadísticas personalizadas del estudiante con resumen de entregas y progreso general.
-
-**Endpoint:** `GET /api/student/entregas/dashboard`
-
-**Query Parameters:**
-- `usuarioId` (integer, opcional) - ID del usuario (temporal: simula autenticación, default: 1)
-
-**Ejemplo:** `GET /api/student/entregas/dashboard?usuarioId=1`
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "total_entregas_realizadas": 8,
-    "entregas_esta_semana": 2,
-    "actividades_disponibles": 12,
-    "progreso_general": 67
-  },
-  "message": "Dashboard del estudiante obtenido exitosamente"
-}
+### POST /api/student/entregas
+```
+✅ id_actividad requerido
+✅ La actividad debe existir
+✅ La fecha límite no debe haber pasado
+✅ No permitir duplicados en actividades individuales
+✅ Crear ArchivoEntrega por cada archivo
 ```
 
-**Características:**
-- `total_entregas_realizadas`: Conteo total de entregas del estudiante
-- `entregas_esta_semana`: Entregas de los últimos 7 días
-- `actividades_disponibles`: Total de actividades en el sistema
-- `progreso_general`: Porcentaje de avance (entregas/actividades * 100)
+### PUT /api/student/entregas/:entregaId
+```
+✅ La entrega debe existir
+✅ Solo el dueño puede actualizarla (id_usuario)
+✅ La fecha límite no debe haber pasado
+✅ Incrementar num_intento automáticamente
+✅ Actualizar fecha_entrega al momento actual
+```
+
+### DELETE /api/student/entregas/:entregaId
+```
+✅ La entrega debe existir
+✅ Solo el dueño puede eliminarla (id_usuario)
+✅ La fecha límite no debe haber pasado
+✅ Eliminar ArchivoEntrega en cascada
+```
 
 ---
 
-### 2.2 Obtener Todas Mis Entregas
+## 📊 MODELOS SEQUELIZE IMPLEMENTADOS
 
-**Descripción:** Obtiene el historial completo de entregas del estudiante con información de puntualidad y estadísticas.
-
-**Endpoint:** `GET /api/student/entregas`
-
-**Query Parameters:**
-- `usuarioId` (integer, opcional) - ID del usuario (temporal: simula autenticación, default: 1)
-
-**Ejemplo:** `GET /api/student/entregas?usuarioId=1`
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "entregas": [
-      {
-        "id_entrega": 15,
-        "fecha_entrega": "2025-10-10T08:30:00.000Z",
-        "id_actividad": 5,
-        "id_usuario": 1,
-        "id_grupo": null,
-        "num_intento": 1,
-        "created_at": "2025-10-10T08:30:00.000Z",
-        "updated_at": "2025-10-10T08:30:00.000Z",
-        "actividad": {
-          "id_actividad": 5,
-          "nombre_actividad": "Proyecto Final",
-          "fecha_limite": "2025-10-12T23:59:59.000Z",
-          "tipo_actividad": "grupal",
-          "unidad": {
-            "titulo_unidad": "Unidad 4: Proyecto Final",
-            "curso": {
-              "nombre_curso": "Programación Avanzada"
-            }
-          }
-        },
-        "archivos": [
-          {
-            "id_archivo_entrega": 20,
-            "nombre_archivo": "proyecto_final.pdf",
-            "tipo_archivo": "pdf",
-            "url_archivo": "/uploads/proyecto_final.pdf",
-            "created_at": "2025-10-10T08:30:00.000Z"
-          }
-        ],
-        "estado_entrega": "entregado",
-        "puntualidad": "a_tiempo",
-        "total_archivos": 1
-      },
-      {
-        "id_entrega": 12,
-        "fecha_entrega": "2025-10-06T23:59:00.000Z",
-        "id_actividad": 3,
-        "id_usuario": 1,
-        "num_intento": 2,
-        "puntualidad": "tardio"
-      }
-    ],
-    "estadisticas": {
-      "total_entregas": 8,
-      "entregas_a_tiempo": 6,
-      "entregas_tardias": 2,
-      "entregas_individuales": 7,
-      "entregas_grupales": 1
-    }
-  },
-  "message": "Mis entregas obtenidas exitosamente"
-}
+### Modelos Activos (5)
+```
+Curso.js          ✅ READ-ONLY (vista)
+Unidad.js         ✅ READ-ONLY (vista)
+Actividad.js      ✅ READ-ONLY (vista)
+Entrega.js        ✅ FULL CRUD (gestión)
+ArchivoEntrega.js ✅ FULL CRUD (gestión)
 ```
 
-**Características:**
-- Ordenado por `fecha_entrega` descendente (más recientes primero)
-- `puntualidad`: "a_tiempo" o "tardio" (comparando fecha_entrega vs fecha_limite)
-- Incluye jerarquía completa de la actividad
-- Incluye todos los archivos adjuntos
-- `num_intento`: Número de intento (1 = primera entrega, 2+ = reenvíos)
-- Estadísticas agregadas de todas las entregas
-
----
-
-### 2.3 Obtener Detalle de una Entrega Específica
-
-**Descripción:** Obtiene el detalle completo de UNA entrega específica del estudiante.
-
-**Endpoint:** `GET /api/student/entregas/:entregaId`
-
-**URL Parameters:**
-- `entregaId` (integer, requerido) - ID de la entrega
-
-**Query Parameters:**
-- `usuarioId` (integer, opcional) - ID del usuario (temporal, default: 1)
-
-**Ejemplo:** `GET /api/student/entregas/15?usuarioId=1`
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id_entrega": 15,
-    "fecha_entrega": "2025-10-10T08:30:00.000Z",
-    "id_actividad": 5,
-    "id_usuario": 1,
-    "id_grupo": null,
-    "num_intento": 1,
-    "actividad": {
-      "id_actividad": 5,
-      "nombre_actividad": "Proyecto Final",
-      "descripcion": "Proyecto integrador del curso",
-      "fecha_limite": "2025-10-12T23:59:59.000Z",
-      "tipo_actividad": "grupal",
-      "unidad": {
-        "titulo_unidad": "Unidad 4: Proyecto Final",
-        "curso": {
-          "nombre_curso": "Programación Avanzada"
-        }
-      }
-    },
-    "archivos": [
-      {
-        "id_archivo_entrega": 20,
-        "nombre_archivo": "proyecto_final.pdf",
-        "tipo_archivo": "pdf",
-        "url_archivo": "/uploads/proyecto_final.pdf",
-        "version": 1,
-        "hash_contenido": null,
-        "created_at": "2025-10-10T08:30:00.000Z"
-      }
-    ],
-    "info_adicional": {
-      "puntualidad": "a_tiempo",
-      "dias_diferencia": -2,
-      "puede_reenviar": true,
-      "total_archivos": 1,
-      "total_mb": 0
-    }
-  },
-  "message": "Detalle de entrega obtenido exitosamente"
-}
-```
-
-**Error 404:**
-```json
-{
-  "success": false,
-  "message": "Entrega no encontrada o no tienes permisos para verla"
-}
-```
-
-**Características:**
-- Solo puede ver SUS PROPIAS entregas (validación por `id_usuario`)
-- `dias_diferencia`: Días de diferencia entre entrega y límite (negativo = antes del límite)
-- `puede_reenviar`: Lógica para determinar si puede hacer otro intento
-- Incluye información completa de la actividad y el curso
-
----
-
-### 2.4 Crear Nueva Entrega (ENVIAR TAREA)
-
-**Descripción:** Crea una nueva entrega para una actividad. Valida fecha límite y previene duplicados en actividades individuales.
-
-**Endpoint:** `POST /api/student/entregas`
-
-**Body Parameters:**
-```json
-{
-  "id_actividad": 5,
-  "id_usuario": 1,
-  "archivos": [
-    {
-      "nombre": "proyecto_final.pdf",
-      "tipo": "pdf",
-      "url": "/uploads/proyecto_final.pdf"
-    },
-    {
-      "nombre": "codigo_fuente.zip",
-      "tipo": "zip",
-      "url": "/uploads/codigo_fuente.zip"
-    }
-  ]
-}
-```
-
-**Campos Requeridos:**
-- `id_actividad` (integer) - ID de la actividad
-
-**Campos Opcionales:**
-- `id_usuario` (integer) - ID del usuario (temporal, default: 1)
-- `archivos` (array) - Array de archivos a adjuntar
-
-**Respuesta Exitosa (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "id_entrega": 16,
-    "fecha_entrega": "2025-10-10T12:00:00.000Z",
-    "id_actividad": 5,
-    "id_usuario": 1,
-    "id_grupo": null,
-    "num_intento": 1,
-    "created_at": "2025-10-10T12:00:00.000Z",
-    "updated_at": "2025-10-10T12:00:00.000Z",
-    "actividad": {
-      "nombre_actividad": "Proyecto Final",
-      "tipo_actividad": "grupal",
-      "fecha_limite": "2025-10-12T23:59:59.000Z"
-    },
-    "archivos": [
-      {
-        "id_archivo_entrega": 21,
-        "nombre_archivo": "proyecto_final.pdf",
-        "tipo_archivo": "pdf",
-        "url_archivo": "/uploads/proyecto_final.pdf",
-        "version": 1
-      }
-    ]
-  },
-  "message": "Entrega creada exitosamente"
-}
-```
-
-**Validaciones y Errores:**
-
-**Error 400 - Campo obligatorio faltante:**
-```json
-{
-  "success": false,
-  "message": "El campo id_actividad es obligatorio"
-}
-```
-
-**Error 404 - Actividad no existe:**
-```json
-{
-  "success": false,
-  "message": "La actividad especificada no existe"
-}
-```
-
-**Error 400 - Fecha límite pasada:**
-```json
-{
-  "success": false,
-  "message": "La fecha límite para esta actividad ya ha pasado",
-  "fecha_limite": "2025-10-05T23:59:59.000Z"
-}
-```
-
-**Error 400 - Ya existe entrega (actividades individuales):**
-```json
-{
-  "success": false,
-  "message": "Ya tienes una entrega para esta actividad. Usa PUT para actualizar.",
-  "entrega_existente": 15
-}
-```
-
-**Características:**
-- Valida que la actividad exista y esté disponible
-- Verifica que no haya pasado la fecha límite
-- Previene entregas duplicadas en actividades individuales
-- Crea `ArchivoEntrega` por cada archivo en el array
-- `num_intento` inicia en 1
-- `fecha_entrega` se establece automáticamente al momento actual
-
----
-
-### 2.5 Actualizar Entrega Existente (NUEVO INTENTO)
-
-**Descripción:** Actualiza una entrega existente creando un nuevo intento. Permite reenviar la tarea antes de la fecha límite.
-
-**Endpoint:** `PUT /api/student/entregas/:entregaId`
-
-**URL Parameters:**
-- `entregaId` (integer, requerido) - ID de la entrega a actualizar
-
-**Body Parameters:**
-```json
-{
-  "id_usuario": 1,
-  "archivos": [
-    {
-      "nombre": "proyecto_final_v2.pdf",
-      "tipo": "pdf",
-      "url": "/uploads/proyecto_final_v2.pdf"
-    }
-  ]
-}
-```
-
-**Campos Opcionales:**
-- `id_usuario` (integer) - ID del usuario (temporal, default: 1)
-- `archivos` (array) - Array de nuevos archivos a adjuntar
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id_entrega": 15,
-    "fecha_entrega": "2025-10-11T14:30:00.000Z",
-    "id_actividad": 5,
-    "id_usuario": 1,
-    "num_intento": 2,
-    "updated_at": "2025-10-11T14:30:00.000Z",
-    "actividad": {
-      "nombre_actividad": "Proyecto Final",
-      "tipo_actividad": "grupal",
-      "fecha_limite": "2025-10-12T23:59:59.000Z"
-    },
-    "archivos": [
-      {
-        "id_archivo_entrega": 20,
-        "nombre_archivo": "proyecto_final.pdf",
-        "version": 1
-      },
-      {
-        "id_archivo_entrega": 22,
-        "nombre_archivo": "proyecto_final_v2.pdf",
-        "version": 2
-      }
-    ]
-  },
-  "message": "Entrega actualizada exitosamente (Intento #2)"
-}
-```
-
-**Validaciones y Errores:**
-
-**Error 404 - Entrega no encontrada:**
-```json
-{
-  "success": false,
-  "message": "Entrega no encontrada o no tienes permisos para actualizarla"
-}
-```
-
-**Error 400 - Fecha límite pasada:**
-```json
-{
-  "success": false,
-  "message": "No puedes actualizar la entrega después de la fecha límite"
-}
-```
-
-**Características:**
-- Solo puede actualizar SUS PROPIAS entregas
-- Incrementa `num_intento` automáticamente
-- Actualiza `fecha_entrega` al momento actual
-- Los archivos nuevos se agregan SIN eliminar los anteriores
-- Cada archivo tiene su `version` correspondiente al número de intento
-- Verifica que no haya pasado la fecha límite
-
----
-
-### 2.6 Eliminar Mi Entrega
-
-**Descripción:** Elimina una entrega del estudiante. Solo se puede eliminar ANTES de la fecha límite.
-
-**Endpoint:** `DELETE /api/student/entregas/:entregaId`
-
-**URL Parameters:**
-- `entregaId` (integer, requerido) - ID de la entrega a eliminar
-
-**Query Parameters:**
-- `usuarioId` (integer, opcional) - ID del usuario (temporal, default: 1)
-
-**Ejemplo:** `DELETE /api/student/entregas/15?usuarioId=1`
-
-**Respuesta Exitosa (200):**
-```json
-{
-  "success": true,
-  "message": "Entrega eliminada exitosamente"
-}
-```
-
-**Validaciones y Errores:**
-
-**Error 404 - Entrega no encontrada:**
-```json
-{
-  "success": false,
-  "message": "Entrega no encontrada o no tienes permisos para eliminarla"
-}
-```
-
-**Error 400 - Fecha límite pasada:**
-```json
-{
-  "success": false,
-  "message": "No puedes eliminar la entrega después de la fecha límite"
-}
-```
-
-**Características:**
-- Solo puede eliminar SUS PROPIAS entregas (validación por `id_usuario`)
-- Elimina primero todos los `ArchivoEntrega` asociados
-- Luego elimina la entrega
-- Solo permite eliminación ANTES de la fecha límite
-- Útil para casos donde el estudiante se equivocó y quiere volver a enviar desde cero
-
----
-
-## 📊 RESUMEN DE CÓDIGOS HTTP
-
-| Código | Significado | Cuándo se usa |
-|--------|-------------|---------------|
-| 200 | OK | GET, PUT, DELETE exitosos |
-| 201 | Created | POST exitoso (entrega creada) |
-| 400 | Bad Request | Validaciones fallidas, campos faltantes |
-| 403 | Forbidden | Sin permisos (futuro con autenticación real) |
-| 404 | Not Found | Recurso no encontrado |
-| 500 | Internal Server Error | Error del servidor |
-
----
-
-## 🔒 NOTAS DE SEGURIDAD
-
-⚠️ **IMPORTANTE:** Actualmente el sistema simula autenticación mediante query parameter `?usuarioId=X`. En producción DEBE implementarse:
-
-1. **JWT Authentication**
-   - Token en header: `Authorization: Bearer <token>`
-   - Extraer `id_usuario` del token decodificado
-   - Eliminar query parameter `usuarioId`
-
-2. **Validación de Permisos**
-   - Middleware que valide que el token pertenece a un estudiante
-   - Verificar que el estudiante solo acceda a SUS recursos
-   - Validar inscripciones a cursos
-
-3. **Validación de Archivos**
-   - Implementar Multer middleware
-   - Validar tipos de archivo permitidos
-   - Limitar tamaño máximo de archivos
-   - Escanear archivos por virus
-
----
-
-## 📝 EJEMPLOS DE USO COMPLETO
-
-### Flujo Típico: Estudiante Entrega una Tarea
-
+### Relaciones (associations.js)
 ```javascript
-// 1. Ver actividades pendientes
-GET /api/student/cursos/actividades/pendientes
+Curso.hasMany(Unidad)
+Unidad.belongsTo(Curso)
 
-// 2. Ver detalle del curso y actividad específica
-GET /api/student/cursos/1/actividades
+Unidad.hasMany(Actividad)
+Actividad.belongsTo(Unidad)
 
-// 3. Crear la entrega
-POST /api/student/entregas
-{
-  "id_actividad": 5,
-  "archivos": [
-    {
-      "nombre": "tarea.pdf",
-      "tipo": "pdf",
-      "url": "/uploads/tarea.pdf"
-    }
-  ]
-}
+Actividad.hasMany(Entrega)
+Entrega.belongsTo(Actividad)
 
-// 4. Ver historial de mis entregas
-GET /api/student/entregas
-
-// 5. Ver dashboard personal
-GET /api/student/entregas/dashboard
-```
-
-### Flujo: Reenviar una Tarea
-
-```javascript
-// 1. Ver detalle de mi entrega anterior
-GET /api/student/entregas/15
-
-// 2. Actualizar la entrega (nuevo intento)
-PUT /api/student/entregas/15
-{
-  "archivos": [
-    {
-      "nombre": "tarea_v2.pdf",
-      "tipo": "pdf",
-      "url": "/uploads/tarea_v2.pdf"
-    }
-  ]
-}
-
-// 3. Verificar que se actualizó correctamente
-GET /api/student/entregas/15
-// num_intento ahora es 2
+Entrega.hasMany(ArchivoEntrega)
+ArchivoEntrega.belongsTo(Entrega)
 ```
 
 ---
 
-**Última actualización:** 2025-10-10
+## 🎯 SCHEMAS DE BASE DE DATOS
+
+### Schemas Activos en Backend Estudiante
+
+#### Schema: `cursos`
+- ✅ `curso` - Información de cursos (READ-ONLY)
+- ✅ `unidad` - Unidades de cada curso (READ-ONLY)
+
+#### Schema: `actividades`
+- ✅ `actividad` - Tareas/actividades (READ-ONLY, conectadas a `unidad` mediante `id_unidad`)
+- ✅ `entrega` - Entregas de estudiantes (FULL CRUD)
+- ✅ `archivo_entrega` - Archivos adjuntos (FULL CRUD)
+
+#### Schema: `usuario`
+- ✅ `usuario` - Información de usuarios (estudiantes y docentes)
+
+### Schemas Disponibles para Próximas Fases
+
+#### Schema: `evaluaciones`
+- 📊 `rubrica` - Rúbricas de evaluación
+- 📊 `criterio` - Criterios de evaluación
+- 📊 `rubrica_criterio` - Relación rúbrica-criterio
+- 📊 `nivel_criterio` - Niveles de desempeño
+- 📊 `evaluacion` - Evaluaciones de entregas
+- 📊 `evaluacion_documento` - Documentos de evaluación
+
+#### Schema: `actividades` (pendientes)
+- 💬 `comentario` - Comentarios sobre entregas
+- 📁 `documento_actividad` - Materiales de apoyo
+
+#### Schema: `grupos`
+- 👥 `grupo` - Grupos para actividades grupales
+- 👥 `miembro_grupo` - Miembros de cada grupo
+
+#### Schema: `permisos`
+- 🔐 `permiso` - Definición de permisos
+- 🔐 `rol` - Roles de usuario
+- 🔐 `rol_permiso` - Relación rol-permiso
+
+#### Schema: `refresh_token`
+- 🔑 `refresh_token` - Tokens de autenticación JWT
+
+**⚠️ NOTA IMPORTANTE:**
+- La tabla `sesion` fue **ELIMINADA** de la BD
+- Las actividades ahora se conectan directamente con unidades mediante `id_unidad`
+- Base de datos **compartida** con backend docente (PostgreSQL en Render)
+
+---
+
+## 🚀 PRÓXIMOS MÓDULOS (PLANIFICADOS)
+
+### Prioridad Alta (Para 90% funcionalidad)
+- 📊 **Evaluaciones** (4 endpoints) - Ver calificaciones
+- 💬 **Comentarios** (2 endpoints) - Ver feedback docente
+- 📁 **Materiales** (3 endpoints) - Acceder a recursos
+- 👥 **Grupos** (5 endpoints) - Trabajo colaborativo
+
+### Prioridad Media
+- 🔔 **Notificaciones** (4 endpoints)
+- 👤 **Perfil** (3 endpoints)
+- 📅 **Calendario** (2 endpoints)
+
+### Prioridad Baja
+- 📝 **Inscripciones** (4 endpoints)
+- 💬 **Foros** (5 endpoints)
+- 📈 **Progreso** (3 endpoints)
+
+---
+
+## 🔧 CÓDIGOS HTTP
+
+### Éxito
+- **200** - GET, PUT, DELETE exitosos
+- **201** - POST creación exitosa
+
+### Error Cliente
+- **400** - Validación fallida / Bad Request
+- **403** - Sin permisos (Forbidden)
+- **404** - Recurso no encontrado
+
+### Error Servidor
+- **500** - Error interno del servidor
+
+---
+
+## 📁 ESTRUCTURA DE ARCHIVOS
+
+```
+src/
+├── config/
+│   └── database.js
+├── models/
+│   ├── associations.js        ⚠️ CRÍTICO: Define relaciones
+│   ├── Curso.js
+│   ├── Unidad.js
+│   ├── Actividad.js           (id_unidad - conexión directa)
+│   ├── Entrega.js
+│   └── ArchivoEntrega.js
+├── controllers/
+│   ├── cursoEstudianteController.js
+│   └── entregaEstudianteController.js
+└── routes/
+    ├── cursoEstudianteRoutes.js
+    └── entregaEstudianteRoutes.js
+```
+
+---
+
+## 🔐 SEGURIDAD
+
+### Estado Actual
+⚠️ **Autenticación simulada** mediante `?usuarioId=1`
+
+### Pendiente para Producción
+- [ ] JWT Authentication
+- [ ] Middleware de autorización
+- [ ] Validación de roles (estudiante)
+- [ ] Upload de archivos real (Multer)
+- [ ] Validación de inscripciones
+- [ ] Rate limiting
+
+---
+
+## 📝 DOCUMENTACIÓN RELACIONADA
+
+- **[DOCUMENTACION_API.md](DOCUMENTACION_API.md)** - Guía práctica con ejemplos de uso completos
+- **[CLAUDE.md](CLAUDE.md)** - Instrucciones para desarrollo y mantenimiento
+- Este archivo - Referencia rápida de arquitectura
+
+---
+
+**Última actualización:** 2025-10-11
+**Estado:** ✅ 100% funcional (módulos básicos)
 **Versión:** 1.0.0
-**Estado:** ✅ Documentación completa
