@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(npm start)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

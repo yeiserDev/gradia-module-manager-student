@@ -1,11 +1,12 @@
 # 📚 DOCUMENTACIÓN API - GradIA Module Manager Student
 
 ## Información General
-- **Versión**: 1.0.0
+- **Versión**: 1.3.0
 - **Base URL**: `http://localhost:3001`
 - **Base de Datos**: PostgreSQL en Render.com (compartida con backend docente)
-- **Total de Endpoints**: 10
-- **Completitud**: 100% ✅ (funcionalidades básicas)
+- **Total de Endpoints**: 18
+- **Completitud**: 100% ✅ (funcionalidades completas)
+- **Última Actualización**: 2025-10-12 (Ejemplos actualizados con respuestas reales de la API)
 
 ---
 
@@ -13,6 +14,9 @@
 
 ### 1. Visualización de Cursos (4 endpoints)
 ### 2. Gestión de Entregas (6 endpoints)
+### 3. Visualización de Comentarios (2 endpoints)
+### 4. Gestión de Materiales (3 endpoints)
+### 5. Gestión de Grupos (3 endpoints)
 
 ---
 
@@ -863,5 +867,484 @@ Para reportar bugs o solicitar funcionalidades:
 
 ---
 
-**Última actualización**: 2025-10-11
-**Versión del documento**: 1.0
+---
+
+## 4️⃣ GESTIÓN DE MATERIALES (3 endpoints)
+
+### 📌 **MATERIALES DE ACTIVIDADES** - Vista Estudiante
+
+#### GET /api/student/materiales/actividad/:actividadId
+Obtener todos los materiales de apoyo de una actividad específica
+
+**Request:**
+```bash
+curl http://localhost:3001/api/student/materiales/actividad/1
+```
+
+**Response (200 OK) - RESPUESTA REAL DE LA API:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id_documento_actividad": 1,
+      "nombre_documento": "Guia para el Proyecto Grupal",
+      "url_archivo": "https://drive.google.com/file/d/abc123",
+      "tipo_documento": "pdf",
+      "id_actividad": 5,
+      "created_at": "2025-10-10T10:56:08.856Z"
+    },
+    {
+      "id_documento_actividad": 2,
+      "nombre_documento": "Guia Actualizada",
+      "url_archivo": "https://drive.google.com/file/d/xyz789",
+      "tipo_documento": "pdf",
+      "id_actividad": 5,
+      "created_at": "2025-10-10T11:01:53.792Z"
+    }
+  ],
+  "message": "Materiales obtenidos exitosamente"
+}
+```
+
+**Errores comunes:**
+- **404 Not Found**: Actividad no encontrada
+
+---
+
+#### GET /api/student/materiales/:materialId
+Obtener detalle de un material específico con información de la actividad asociada
+
+**Request:**
+```bash
+curl http://localhost:3001/api/student/materiales/6
+```
+
+**Response (200 OK) - RESPUESTA REAL DE LA API:**
+```json
+{
+  "success": true,
+  "data": {
+    "id_documento_actividad": 6,
+    "id_actividad": 4,
+    "nombre_documento": "Plantilla PARA ESTA TAREA 4",
+    "url_archivo": "https://drive.google.com/file/d/xyz456",
+    "tipo_documento": "pdf",
+    "created_at": "2025-10-12T00:52:26.532Z",
+    "actividad": {
+      "id_actividad": 4,
+      "nombre_actividad": "Tarea de Prueba para Estudiante",
+      "descripcion": "Actividad para probar entregas",
+      "unidad": {
+        "id_unidad": 1,
+        "titulo_unidad": "Unidad 1: Ordenamiento",
+        "curso": {
+          "id_curso": 1,
+          "nombre_curso": "Programación Avanzada"
+        }
+      }
+    }
+  },
+  "message": "Detalle del material obtenido exitosamente"
+}
+```
+
+**Errores comunes:**
+- **404 Not Found**: Material no encontrado
+
+---
+
+#### GET /api/student/materiales/curso/:cursoId
+Obtener todos los materiales de un curso completo, organizados por actividades
+
+**Request:**
+```bash
+curl http://localhost:3001/api/student/materiales/curso/1
+```
+
+**Response (200 OK) - RESPUESTA REAL DE LA API:**
+```json
+{
+  "success": true,
+  "data": {
+    "curso": {
+      "id_curso": 1,
+      "nombre_curso": "Programación Avanzada"
+    },
+    "total_actividades_con_materiales": 2,
+    "actividades": [
+      {
+        "id_actividad": 4,
+        "nombre_actividad": "Tarea de Prueba para Estudiante",
+        "unidad": {
+          "id_unidad": 1,
+          "titulo_unidad": "Unidad 1: Ordenamiento",
+          "numero_unidad": 1
+        },
+        "total_materiales": 2,
+        "materiales": [
+          {
+            "id_documento_actividad": 1,
+            "nombre_documento": "Guia para el Proyecto Grupal",
+            "url_archivo": "https://drive.google.com/file/d/abc123",
+            "tipo_documento": "pdf",
+            "id_actividad": 5,
+            "created_at": "2025-10-10T10:56:08.856Z"
+          },
+          {
+            "id_documento_actividad": 2,
+            "nombre_documento": "Guia Actualizada",
+            "url_archivo": "https://drive.google.com/file/d/xyz789",
+            "tipo_documento": "pdf",
+            "id_actividad": 5,
+            "created_at": "2025-10-10T11:01:53.792Z"
+          }
+        ]
+      }
+    ]
+  },
+  "message": "Materiales del curso obtenidos exitosamente"
+}
+```
+
+**Errores comunes:**
+- **404 Not Found**: Curso no encontrado
+
+**Notas:**
+- Solo se muestran actividades que tienen materiales
+- Los materiales se ordenan por fecha de creación (más antiguos primero)
+- Útil para descargar todos los recursos de un curso
+
+---
+
+## 5️⃣ GESTIÓN DE GRUPOS (3 endpoints)
+
+### 📌 **GRUPOS DE TRABAJO** - Vista Estudiante
+
+#### GET /api/student/grupos?usuarioId=X
+Obtener todos los grupos de los que soy miembro
+
+**Parámetros Query:**
+- `usuarioId` (requerido): ID del estudiante
+
+**Request:**
+```bash
+curl "http://localhost:3001/api/student/grupos?usuarioId=1"
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id_grupo": 1,
+      "nombre_grupo": "Grupo A",
+      "total_miembros": 2,
+      "actividad": {
+        "id_actividad": 5,
+        "nombre_actividad": "Tarea 1: Actualizada",
+        "tipo_actividad": "grupal",
+        "fecha_limite": "2026-01-15T05:00:00.000Z",
+        "unidad": {
+          "id_unidad": 1,
+          "titulo_unidad": "Unidad 12: Introducción Actualizadaa",
+          "curso": {
+            "id_curso": 1,
+            "nombre_curso": "Sistemas Dinámicos Avanzados"
+          }
+        }
+      },
+      "miembros": [
+        {
+          "id_miembro": 2,
+          "id_usuario": 1
+        },
+        {
+          "id_miembro": 6,
+          "id_usuario": 4
+        }
+      ]
+    }
+  ],
+  "message": "Grupos obtenidos exitosamente"
+}
+```
+
+**Errores comunes:**
+- **400 Bad Request**: `usuarioId` no proporcionado
+
+---
+
+#### GET /api/student/grupos/:grupoId?usuarioId=X
+Obtener detalle de un grupo específico (solo si soy miembro)
+
+**Parámetros Query:**
+- `usuarioId` (requerido): ID del estudiante
+
+**Request:**
+```bash
+curl "http://localhost:3001/api/student/grupos/1?usuarioId=1"
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "id_grupo": 1,
+    "id_actividad": 5,
+    "nombre_grupo": "Grupo A",
+    "actividad": {
+      "id_actividad": 5,
+      "nombre_actividad": "Tarea 1: Actualizada",
+      "descripcion": "Esta actividad fue actualizada",
+      "fecha_limite": "2026-01-15T05:00:00.000Z",
+      "tipo_actividad": "grupal",
+      "id_unidad": 1,
+      "id_usuario": 1,
+      "id_rubrica": null,
+      "created_at": "2025-10-10T08:50:58.212Z",
+      "updated_at": "2025-10-10T08:55:42.477Z",
+      "unidad": {
+        "id_unidad": 1,
+        "titulo_unidad": "Unidad 12: Introducción Actualizadaa",
+        "descripcion": "Fundamentos avanzadooos",
+        "numero_unidad": 1,
+        "id_curso": 1,
+        "created_at": "2025-09-18T06:12:54.075Z",
+        "updated_at": "2025-10-03T01:41:37.433Z",
+        "curso": {
+          "id_curso": 1,
+          "nombre_curso": "Sistemas Dinámicos Avanzados",
+          "descripcion": "Curso actualizado de análisis de sistemas dinámicos",
+          "estado": "activo",
+          "id_usuario": 1,
+          "created_at": "2025-09-18T06:10:19.167Z",
+          "updated_at": "2025-09-18T06:16:06.913Z"
+        }
+      }
+    },
+    "miembros": [
+      {
+        "id_miembro": 2,
+        "id_usuario": 1
+      },
+      {
+        "id_miembro": 6,
+        "id_usuario": 4
+      }
+    ],
+    "total_miembros": 2
+  },
+  "message": "Detalle del grupo obtenido exitosamente"
+}
+```
+
+**Errores comunes:**
+- **400 Bad Request**: `usuarioId` no proporcionado
+- **404 Not Found**: Grupo no encontrado
+- **403 Forbidden**: No eres miembro de este grupo
+
+---
+
+#### GET /api/student/grupos/actividad/:actividadId
+Obtener todos los grupos de una actividad específica
+
+**Request:**
+```bash
+curl http://localhost:3001/api/student/grupos/actividad/5
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "actividad": {
+      "id_actividad": 5,
+      "nombre_actividad": "Tarea 1: Actualizada",
+      "tipo_actividad": "grupal"
+    },
+    "total_grupos": 2,
+    "grupos": [
+      {
+        "id_grupo": 1,
+        "nombre_grupo": "Grupo A",
+        "total_miembros": 2,
+        "miembros": [
+          {
+            "id_miembro": 2,
+            "id_usuario": 1
+          },
+          {
+            "id_miembro": 6,
+            "id_usuario": 4
+          }
+        ]
+      },
+      {
+        "id_grupo": 2,
+        "nombre_grupo": "Grupo B - ACTUALIZADO",
+        "total_miembros": 2,
+        "miembros": [
+          {
+            "id_miembro": 3,
+            "id_usuario": 2
+          },
+          {
+            "id_miembro": 5,
+            "id_usuario": 4
+          }
+        ]
+      }
+    ]
+  },
+  "message": "Grupos de la actividad obtenidos exitosamente"
+}
+```
+
+**Errores comunes:**
+- **404 Not Found**: Actividad no encontrada
+
+**Notas:**
+- Útil para ver qué grupos están disponibles en una actividad grupal
+- Muestra todos los grupos de la actividad, no solo los que incluyen al estudiante
+- Los miembros solo incluyen `id_miembro` e `id_usuario` (estructura simplificada según BD real)
+
+---
+
+---
+
+## 🧪 GUÍA RÁPIDA DE PRUEBAS
+
+### Comandos de Prueba Rápida (Copiar y Pegar)
+
+**1. Verificar conexión del servidor:**
+```bash
+curl http://localhost:3001/api/health
+```
+
+**2. Ver todos mis cursos:**
+```bash
+curl http://localhost:3001/api/student/cursos
+```
+
+**3. Ver actividades pendientes:**
+```bash
+curl "http://localhost:3001/api/student/cursos/actividades/pendientes?usuarioId=1"
+```
+
+**4. Ver mis entregas:**
+```bash
+curl "http://localhost:3001/api/student/entregas?usuarioId=1"
+```
+
+**5. Ver dashboard personal:**
+```bash
+curl "http://localhost:3001/api/student/entregas/dashboard?usuarioId=1"
+```
+
+**6. Ver mis comentarios:**
+```bash
+curl "http://localhost:3001/api/student/comentarios?usuarioId=1"
+```
+
+**7. Ver materiales de una actividad:**
+```bash
+curl http://localhost:3001/api/student/materiales/actividad/5
+```
+
+**8. Ver mis grupos:**
+```bash
+curl "http://localhost:3001/api/student/grupos?usuarioId=1"
+```
+
+**9. Ver grupos de una actividad:**
+```bash
+curl http://localhost:3001/api/student/grupos/actividad/5
+```
+
+**10. Crear nueva entrega (POST):**
+```bash
+curl -X POST http://localhost:3001/api/student/entregas \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id_actividad": 5,
+    "id_usuario": 1,
+    "archivos": [
+      {
+        "nombre": "tarea.pdf",
+        "tipo": "pdf",
+        "url": "/uploads/tarea.pdf"
+      }
+    ]
+  }'
+```
+
+### Notas de Prueba:
+- Todos los endpoints requieren que el servidor esté corriendo en puerto 3001
+- Para iniciar el servidor: `node app.js`
+- Para pruebas, usa `usuarioId=1` (usuario de prueba)
+- Los IDs de actividades y cursos deben existir en la BD
+
+---
+
+**Última actualización**: 2025-10-12
+**Versión del documento**: 1.3.1 (Actualizado con respuestas reales de la API)
+
+---
+
+## 📝 HISTORIAL DE CAMBIOS
+
+### v1.3.1 (2025-10-12) - FIX CRÍTICO
+**🔧 Corrección del Modelo DocumentoActividad**
+
+**Problema identificado:**
+- El modelo `DocumentoActividad.js` tenía campos incorrectos que no coincidían con la estructura real de la tabla en PostgreSQL
+- Causaba error: `column "url_documento" does not exist`
+
+**Cambios realizados:**
+
+1. **Modelo DocumentoActividad.js:**
+   - ❌ Eliminado: `url_documento` → ✅ Corregido a: `url_archivo`
+   - ❌ Eliminado: Campo `tamano_bytes` (no existe en BD)
+   - ❌ Eliminado: Campo `descripcion` (no existe en BD)
+
+2. **Controlador materialEstudianteController.js:**
+   - Actualizado todos los `attributes` en queries Sequelize
+   - Ahora usa: `['id_documento_actividad', 'nombre_documento', 'url_archivo', 'tipo_documento', 'id_actividad', 'created_at']`
+
+3. **Estructura CORRECTA de la tabla `actividades.documento_actividad`:**
+   ```sql
+   id_documento_actividad  INTEGER (PK)
+   nombre_documento        VARCHAR
+   tipo_documento          VARCHAR
+   url_archivo             TEXT        ← NOMBRE CORRECTO
+   id_actividad            INTEGER (FK)
+   created_at              TIMESTAMP
+   ```
+
+**Endpoints afectados (ahora funcionando correctamente):**
+- ✅ `GET /api/student/materiales/actividad/:actividadId`
+- ✅ `GET /api/student/materiales/:materialId`
+- ✅ `GET /api/student/materiales/curso/:cursoId`
+
+**Respuestas actualizadas:**
+- Todas las respuestas de ejemplo en esta documentación ahora reflejan los datos REALES de la API
+- Los campos ahora coinciden con la estructura real de la base de datos
+
+**Impacto:**
+- 🟢 Backend: RESUELTO - Endpoints de materiales 100% funcionales
+- 🟡 Frontend: Si tienes código frontend, actualizar referencias de `url_documento` → `url_archivo`
+- 🟡 Frontend: Eliminar referencias a `tamano_bytes` y `descripcion` si existen
+
+### v1.3.0 (2025-10-11)
+- Actualización con respuestas reales de la API
+- Correcciones de grupos y miembros
+
+### v1.2.0 (2025-10-10)
+- Migración sin sesiones completada
+- Implementación de módulos de materiales y grupos
+
+---

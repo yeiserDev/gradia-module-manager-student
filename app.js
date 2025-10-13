@@ -12,7 +12,10 @@ require('./src/models/associations');
 // Importar rutas
 const cursoEstudianteRoutes = require('./src/routes/cursoEstudianteRoutes');
 const entregaEstudianteRoutes = require('./src/routes/entregaEstudianteRoutes');
+const comentarioEstudianteRoutes = require('./src/routes/comentarioEstudianteRoutes');
 const evaluacionEstudianteRoutes = require('./src/routes/evaluacionEstudianteRoutes');
+const materialEstudianteRoutes = require('./src/routes/materialEstudianteRoutes');
+const grupoEstudianteRoutes = require('./src/routes/grupoEstudianteRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001; // Puerto diferente al docente (3000)
@@ -40,7 +43,10 @@ app.use((req, res, next) => {
 // Rutas para estudiantes
 app.use('/api/student/cursos', cursoEstudianteRoutes);
 app.use('/api/student/entregas', entregaEstudianteRoutes);
+app.use('/api/student/comentarios', comentarioEstudianteRoutes);
 app.use('/api/student/evaluaciones', evaluacionEstudianteRoutes);
+app.use('/api/student/materiales', materialEstudianteRoutes);
+app.use('/api/student/grupos', grupoEstudianteRoutes);
 
 // ==========================================
 // RUTAS BÁSICAS
@@ -50,14 +56,17 @@ app.use('/api/student/evaluaciones', evaluacionEstudianteRoutes);
 app.get('/', (req, res) => {
   res.json({
     message: 'API de GradIA - Vista Estudiante',
-    version: '1.0.0',
-    status: 'Configuración inicial completada',
+    version: '1.2.0',
+    status: 'Configuración completa con materiales y grupos',
     endpoints: {
       health: '/api/health',
       mis_cursos: '/api/student/cursos',
       actividades_pendientes: '/api/student/cursos/actividades/pendientes',
       mis_entregas: '/api/student/entregas',
-      dashboard: '/api/student/entregas/dashboard'
+      dashboard: '/api/student/entregas/dashboard',
+      mis_comentarios: '/api/student/comentarios',
+      materiales: '/api/student/materiales',
+      mis_grupos: '/api/student/grupos'
     }
   });
 });

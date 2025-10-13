@@ -2,16 +2,17 @@
 
 ## 📖 Documentación del Proyecto
 
-Este proyecto cuenta con **2 archivos de documentación principales**:
+Este proyecto cuenta con **4 archivos de documentación principales**:
 
-1. **[DOCUMENTACION_API.md](DOCUMENTACION_API.md)** - Guía práctica con ejemplos de uso, requests/responses completos (para desarrolladores implementando el frontend)
-2. **[ENDPOINTS_BACKEND_ESTUDIANTE.md](ENDPOINTS_BACKEND_ESTUDIANTE.md)** - Referencia rápida de arquitectura y estructura del sistema (para team leads y arquitectos)
-3. **Este archivo (CLAUDE.md)** - Instrucciones detalladas para desarrollo y mantenimiento del backend
+1. **[DOCUMENTACION_API.md](DOCUMENTACION_API.md)** - Guía práctica con ejemplos de uso, requests/responses completos y respuestas reales de la API (para desarrolladores implementando el frontend)
+2. **[PRUEBAS_API.md](PRUEBAS_API.md)** - Guía rápida de pruebas con comandos curl listos para copiar y pegar (para testing y QA)
+3. **[ENDPOINTS_BACKEND_ESTUDIANTE.md](ENDPOINTS_BACKEND_ESTUDIANTE.md)** - Referencia rápida de arquitectura y estructura del sistema (para team leads y arquitectos)
+4. **Este archivo (CLAUDE.md)** - Instrucciones detalladas para desarrollo y mantenimiento del backend
 
 ---
 
 ## Descripción del Proyecto
-API Backend para el sistema de gestión académica GradIA desde la perspectiva del **estudiante**. Sistema funcional con 10 endpoints operativos que permiten visualizar cursos, unidades, actividades y gestionar entregas de tareas.
+API Backend para el sistema de gestión académica GradIA desde la perspectiva del **estudiante**. Sistema funcional con 18 endpoints operativos que permiten visualizar cursos, unidades, actividades, gestionar entregas de tareas, consultar comentarios del docente, acceder a materiales de apoyo y ver grupos de trabajo.
 
 **🔄 MIGRACIÓN COMPLETADA:** Backend sin sesiones - Actividad conecta directamente con Unidad (alineado con backend docente).
 
@@ -28,7 +29,7 @@ API Backend para el sistema de gestión académica GradIA desde la perspectiva d
 
 ## 🎉 ESTADO ACTUAL DEL BACKEND: 100% COMPLETADO
 
-### ✅ MÓDULOS IMPLEMENTADOS (10 endpoints)
+### ✅ MÓDULOS IMPLEMENTADOS (18 endpoints)
 
 #### **1. Visualización de Cursos (4 endpoints)** ✅
 - ✅ **GET** `/api/student/cursos` - Ver todos mis cursos
@@ -44,7 +45,21 @@ API Backend para el sistema de gestión académica GradIA desde la perspectiva d
 - ✅ **PUT** `/api/student/entregas/:entregaId` - Actualizar entrega (nuevo intento)
 - ✅ **DELETE** `/api/student/entregas/:entregaId` - Eliminar entrega (antes de fecha límite)
 
-**Total: 10 endpoints funcionales** 🎊
+#### **3. Visualización de Comentarios (2 endpoints)** ✅
+- ✅ **GET** `/api/student/comentarios` - Ver todos mis comentarios
+- ✅ **GET** `/api/student/comentarios/entrega/:entregaId` - Ver comentarios de una entrega específica
+
+#### **4. Gestión de Materiales (3 endpoints)** ✅
+- ✅ **GET** `/api/student/materiales/actividad/:actividadId` - Ver materiales de una actividad
+- ✅ **GET** `/api/student/materiales/:materialId` - Detalle de un material específico
+- ✅ **GET** `/api/student/materiales/curso/:cursoId` - Ver todos los materiales de un curso
+
+#### **5. Gestión de Grupos (3 endpoints)** ✅
+- ✅ **GET** `/api/student/grupos` - Ver todos mis grupos
+- ✅ **GET** `/api/student/grupos/:grupoId` - Detalle de un grupo específico
+- ✅ **GET** `/api/student/grupos/actividad/:actividadId` - Ver grupos de una actividad
+
+**Total: 18 endpoints funcionales** 🎊
 
 ---
 
@@ -79,8 +94,9 @@ ESTUDIANTE
 | **Actividades** | Crear, editar, eliminar | Solo visualizar y entregar |
 | **Entregas** | Ver todas (modo supervisor) | Solo ver y gestionar las propias |
 | **Evaluación** | Crear rúbricas y evaluar | Ver calificaciones (futuro) |
-| **Grupos** | Crear y gestionar grupos | Ver grupos (futuro) |
-| **Total endpoints** | 62 | 10 |
+| **Materiales** | Crear y gestionar materiales | Ver materiales (READ-ONLY) |
+| **Grupos** | Crear y gestionar grupos | Ver grupos (READ-ONLY) |
+| **Total endpoints** | 62 | 18 |
 
 ---
 
@@ -97,13 +113,23 @@ gradia-module-manager-student/
 │   │   ├── Unidad.js
 │   │   ├── Actividad.js            ✅ Conecta directamente con Unidad
 │   │   ├── Entrega.js
-│   │   └── ArchivoEntrega.js
+│   │   ├── ArchivoEntrega.js
+│   │   ├── Comentario.js           ✅ Comentarios sobre entregas
+│   │   ├── DocumentoActividad.js   ✅ Materiales de actividades
+│   │   ├── Grupo.js                ✅ Grupos de trabajo
+│   │   └── MiembroGrupo.js         ✅ Miembros de grupos
 │   ├── controllers/
 │   │   ├── cursoEstudianteController.js
-│   │   └── entregaEstudianteController.js
+│   │   ├── entregaEstudianteController.js
+│   │   ├── comentarioEstudianteController.js
+│   │   ├── materialEstudianteController.js
+│   │   └── grupoEstudianteController.js
 │   ├── routes/
 │   │   ├── cursoEstudianteRoutes.js
-│   │   └── entregaEstudianteRoutes.js
+│   │   ├── entregaEstudianteRoutes.js
+│   │   ├── comentarioEstudianteRoutes.js
+│   │   ├── materialEstudianteRoutes.js
+│   │   └── grupoEstudianteRoutes.js
 │   ├── middlewares/
 │   │   ├── auth.js                 ⚠️ NO implementado aún
 │   │   └── upload.js               ⚠️ NO implementado aún
@@ -294,7 +320,7 @@ Para obtener relaciones anidadas:
 - ✅ `entrega` - Entregas de estudiantes (FULL CRUD para estudiantes)
 - ✅ `archivo_entrega` - Archivos adjuntos a entregas (FULL CRUD)
 - ✅ `comentario` - Comentarios de docentes sobre entregas (READ-ONLY, futuro)
-- ✅ `documento_actividad` - Materiales de apoyo de actividades (READ-ONLY, futuro)
+- ✅ `documento_actividad` - Materiales de apoyo de actividades (READ-ONLY) ⚠️ **Campos: id_documento_actividad, nombre_documento, tipo_documento, url_archivo, id_actividad, created_at**
 
 ### Schema: `evaluaciones`
 - ✅ `rubrica` - Rúbricas de evaluación (READ-ONLY, futuro)
@@ -326,12 +352,13 @@ Para obtener relaciones anidadas:
 - La tabla `sesion` fue **ELIMINADA** de la BD
 - Las actividades ahora se conectan **directamente** con unidades mediante `id_unidad`
 - Todos los schemas están **compartidos** con el backend docente (misma BD en Render)
+- **FIX 2025-10-12:** Modelo `DocumentoActividad` corregido - La tabla usa `url_archivo` (NO `url_documento`) y NO tiene los campos `tamano_bytes` ni `descripcion`
 
 ---
 
 ## 🚀 ENDPOINTS PRINCIPALES
 
-Para la documentación completa de los 10 endpoints, consultar:
+Para la documentación completa de los 18 endpoints, consultar:
 **[ENDPOINTS_BACKEND_ESTUDIANTE.md](ENDPOINTS_BACKEND_ESTUDIANTE.md)**
 
 ### Resumen por Módulo:
@@ -349,6 +376,20 @@ Para la documentación completa de los 10 endpoints, consultar:
 - **POST** `/api/student/entregas` - Enviar nueva tarea
 - **PUT** `/api/student/entregas/:entregaId` - Actualizar/reenviar tarea
 - **DELETE** `/api/student/entregas/:entregaId` - Eliminar entrega (antes de fecha límite)
+
+#### Visualización de Comentarios (2 endpoints)
+- **GET** `/api/student/comentarios` - Ver todos mis comentarios
+- **GET** `/api/student/comentarios/entrega/:entregaId` - Ver comentarios de una entrega específica
+
+#### Gestión de Materiales (3 endpoints)
+- **GET** `/api/student/materiales/actividad/:actividadId` - Ver materiales de una actividad
+- **GET** `/api/student/materiales/:materialId` - Detalle de un material específico
+- **GET** `/api/student/materiales/curso/:cursoId` - Ver todos los materiales de un curso
+
+#### Gestión de Grupos (3 endpoints)
+- **GET** `/api/student/grupos` - Ver todos mis grupos
+- **GET** `/api/student/grupos/:grupoId` - Detalle de un grupo específico
+- **GET** `/api/student/grupos/actividad/:actividadId` - Ver grupos de una actividad
 
 ---
 
@@ -536,16 +577,16 @@ Response:
 ## 📈 ESTADÍSTICAS DEL PROYECTO
 
 ### Backend Estudiante Implementado:
-- **Total de Endpoints**: 10
-- **Modelos Sequelize**: 5 (Curso, Unidad, Actividad, Entrega, ArchivoEntrega)
-- **Controllers**: 2 (cursoEstudiante, entregaEstudiante)
-- **Rutas**: 2
-- **Completitud**: 100% ✅ (funcionalidades básicas + migración sin sesiones)
+- **Total de Endpoints**: 18
+- **Modelos Sequelize**: 8 (Curso, Unidad, Actividad, Entrega, ArchivoEntrega, Comentario, DocumentoActividad, Grupo, MiembroGrupo)
+- **Controllers**: 5 (cursoEstudiante, entregaEstudiante, comentarioEstudiante, materialEstudiante, grupoEstudiante)
+- **Rutas**: 5
+- **Completitud**: 100% ✅ (funcionalidades completas + migración sin sesiones)
 
 ### Base de Datos Compartida:
 - **Misma BD**: que backend docente
 - **Puerto diferente**: 3001 (docente usa 3000)
-- **Schemas en uso**: 2 (cursos, actividades)
+- **Schemas en uso**: 3 (cursos, actividades, grupos)
 
 ---
 
@@ -561,21 +602,24 @@ El backend del área estudiante de GradIA está **100% funcional** para las func
 ✅ Información de prioridad y puntualidad
 ✅ Filtros personalizados para estudiantes
 ✅ Seguimiento de actividades pendientes
+✅ Visualización de comentarios del docente sobre entregas
+✅ **Acceso a materiales de apoyo de actividades** (CORREGIDO 2025-10-12)
+✅ **Visualización de grupos de trabajo y miembros**
 ✅ Código limpio siguiendo patrones MVC
 ✅ Documentación completa
 ✅ **Migración sin sesiones completada** (100% alineado con backend docente)
+✅ **Modelo DocumentoActividad corregido** (url_archivo en lugar de url_documento)
 
 **Pendientes:**
 ⚠️ Autenticación real (actualmente simulada)
 ⚠️ Upload de archivos real (Multer no implementado)
 ⚠️ Sistema de inscripciones
-⚠️ Visualización de evaluaciones
-⚠️ Gestión de grupos
+⚠️ Visualización de evaluaciones (calificaciones)
 
 ---
 
-**Última actualización:** 2025-10-10
-**Versión del API:** 1.0.0
-**Estado:** ✅ Producción (funcionalidades básicas, sin autenticación)
+**Última actualización:** 2025-10-12
+**Versión del API:** 1.3.0
+**Estado:** ✅ Producción (funcionalidades completas: cursos, entregas, comentarios, materiales y grupos)
 **Puerto:** 3001
 **Base de Datos:** PostgreSQL en Render.com (compartida con backend docente)

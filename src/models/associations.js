@@ -8,6 +8,10 @@ const Unidad = require('./Unidad');
 const Actividad = require('./Actividad');
 const Entrega = require('./Entrega');
 const ArchivoEntrega = require('./ArchivoEntrega');
+const Comentario = require('./Comentario');
+const DocumentoActividad = require('./DocumentoActividad');
+const Grupo = require('./Grupo');
+const MiembroGrupo = require('./MiembroGrupo');
 const Evaluacion = require('./Evaluacion');
 const DetalleEvaluacion = require('./DetalleEvaluacion');
 const Rubrica = require('./Rubrica');
@@ -61,6 +65,54 @@ Entrega.hasMany(ArchivoEntrega, {
 ArchivoEntrega.belongsTo(Entrega, {
   foreignKey: 'id_entrega',
   as: 'entrega'
+});
+
+// Entrega → Comentario (Una entrega puede tener muchos comentarios)
+Entrega.hasMany(Comentario, {
+  foreignKey: 'id_entrega',
+  as: 'comentarios'
+});
+Comentario.belongsTo(Entrega, {
+  foreignKey: 'id_entrega',
+  as: 'entrega'
+});
+
+// ==========================================
+// RELACIONES DE MATERIALES
+// ==========================================
+
+// Actividad → DocumentoActividad (Una actividad puede tener muchos materiales)
+Actividad.hasMany(DocumentoActividad, {
+  foreignKey: 'id_actividad',
+  as: 'materiales'
+});
+DocumentoActividad.belongsTo(Actividad, {
+  foreignKey: 'id_actividad',
+  as: 'actividad'
+});
+
+// ==========================================
+// RELACIONES DE GRUPOS
+// ==========================================
+
+// Actividad → Grupo (Una actividad puede tener muchos grupos)
+Actividad.hasMany(Grupo, {
+  foreignKey: 'id_actividad',
+  as: 'grupos'
+});
+Grupo.belongsTo(Actividad, {
+  foreignKey: 'id_actividad',
+  as: 'actividad'
+});
+
+// Grupo → MiembroGrupo (Un grupo puede tener muchos miembros)
+Grupo.hasMany(MiembroGrupo, {
+  foreignKey: 'id_grupo',
+  as: 'miembros'
+});
+MiembroGrupo.belongsTo(Grupo, {
+  foreignKey: 'id_grupo',
+  as: 'grupo'
 });
 
 // ==========================================
@@ -142,6 +194,10 @@ module.exports = {
   Actividad,
   Entrega,
   ArchivoEntrega,
+  Comentario,
+  DocumentoActividad,
+  Grupo,
+  MiembroGrupo,
   Evaluacion,
   DetalleEvaluacion,
   Rubrica,
