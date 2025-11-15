@@ -2,6 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const cursoEstudianteController = require('../controllers/cursoEstudianteController');
+const authenticate = require('../middlewares/authenticate');
+const authorize = require('../middlewares/authorize');
+
+// 🔒 Todas las rutas requieren autenticación y rol ESTUDIANTE
+router.use(authenticate);
+router.use(authorize(['ESTUDIANTE', 'ADMIN']));
 
 // ==========================================
 // RUTAS PARA VISTA DE CURSOS - ESTUDIANTE

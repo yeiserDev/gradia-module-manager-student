@@ -7,7 +7,7 @@ const entregaEstudianteController = {
   // Obtener MIS entregas realizadas
   getMisEntregas: async (req, res) => {
     try {
-      const { usuarioId = 1 } = req.query; // Temporal: simular usuario logueado
+      const usuarioId = req.user.id; // 🔧 Usuario autenticado desde JWT
 
       const entregas = await Entrega.findAll({
         where: { id_usuario: usuarioId },
@@ -91,10 +91,10 @@ const entregaEstudianteController = {
   getDetalleEntrega: async (req, res) => {
     try {
       const { entregaId } = req.params;
-      const { usuarioId = 1 } = req.query; // Temporal: simular usuario logueado
+      const usuarioId = req.user.id; // 🔧 Usuario autenticado desde JWT
 
       const entrega = await Entrega.findOne({
-        where: { 
+        where: {
           id_entrega: entregaId,
           id_usuario: usuarioId // Solo puede ver SUS entregas
         },
@@ -376,7 +376,7 @@ const entregaEstudianteController = {
   deleteEntrega: async (req, res) => {
     try {
       const { entregaId } = req.params;
-      const { usuarioId = 1 } = req.query; // Temporal: simular usuario logueado
+      const usuarioId = req.user.id; // 🔧 Usuario autenticado desde JWT
 
       const entrega = await Entrega.findOne({
         where: {
@@ -466,7 +466,7 @@ const entregaEstudianteController = {
   // Dashboard con estadísticas personales
   getDashboardEstudiante: async (req, res) => {
     try {
-      const { usuarioId = 1 } = req.query; // Temporal: simular usuario logueado
+      const usuarioId = req.user.id; // 🔧 Usuario autenticado desde JWT
 
       // Obtener mis entregas
       const misEntregas = await Entrega.count({
