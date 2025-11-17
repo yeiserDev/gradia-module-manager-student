@@ -26,7 +26,16 @@ const PORT = process.env.PORT || 3001; // Puerto diferente al docente (3000)
 // ==========================================
 // MIDDLEWARES BÁSICOS
 // ==========================================
-app.use(cors());
+
+// Configuración de CORS para permitir credenciales
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true, // Permitir cookies y headers de autenticación
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
