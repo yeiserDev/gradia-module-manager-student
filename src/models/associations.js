@@ -18,6 +18,21 @@ const Rubrica = require('./Rubrica');
 const Criterio = require('./Criterio');
 const NivelCriterio = require('./NivelCriterio');
 const RubricaCriterio = require('./RubricaCriterio');
+const Inscripcion = require('./Inscripcion');
+
+// ==========================================
+// RELACIONES DE INSCRIPCIÓN
+// ==========================================
+
+// Usuario-Curso a través de Inscripcion (relación N:M)
+Curso.hasMany(Inscripcion, {
+  foreignKey: 'id_curso',
+  as: 'inscripciones'
+});
+Inscripcion.belongsTo(Curso, {
+  foreignKey: 'id_curso',
+  as: 'curso'
+});
 
 // ==========================================
 // RELACIONES BÁSICAS DE LA JERARQUÍA
@@ -203,5 +218,6 @@ module.exports = {
   Rubrica,
   Criterio,
   NivelCriterio,
-  RubricaCriterio
+  RubricaCriterio,
+  Inscripcion
 };

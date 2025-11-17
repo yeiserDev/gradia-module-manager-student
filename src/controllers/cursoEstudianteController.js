@@ -1,14 +1,22 @@
 // src/controllers/cursoEstudianteController.js
-const { Curso, Unidad, Actividad, Entrega } = require('../models/associations');
+const { Curso, Unidad, Actividad, Entrega, Inscripcion } = require('../models/associations');
 
 const cursoEstudianteController = {
-  
-  // Obtener todos los cursos disponibles para el estudiante
-  // (Por ahora mostramos todos, luego implementaremos inscripciones)
+
+  // Obtener todos los cursos donde el estudiante está inscrito
   getMisCursos: async (req, res) => {
     try {
+      const userId = req.user.id; // ID del estudiante autenticado desde JWT
+
+      // Buscar cursos donde el estudiante está inscrito
       const cursos = await Curso.findAll({
         include: [
+          {
+            model: Inscripcion,
+            as: 'inscripciones',
+            where: { id_usuario: userId }, // Solo cursos donde está inscrito
+            attributes: [] // No incluir datos de inscripción en respuesta
+          },
           {
             model: Unidad,
             as: 'unidades',
