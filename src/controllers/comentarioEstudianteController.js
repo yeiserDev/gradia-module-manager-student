@@ -16,7 +16,7 @@ const { Comentario, Entrega, Actividad, Unidad, Curso } = require('../models/ass
 const getComentariosPorEntrega = async (req, res) => {
   try {
     const { entregaId } = req.params;
-    const usuarioId = req.query.usuarioId || 1; // Temporal: simula autenticación
+    const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
     // Validar que entregaId sea un número
     if (isNaN(entregaId)) {
@@ -87,7 +87,7 @@ const getComentariosPorEntrega = async (req, res) => {
  */
 const getMisComentarios = async (req, res) => {
   try {
-    const usuarioId = req.query.usuarioId || 1; // Temporal: simula autenticación
+    const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
     // 1. Obtener todas las entregas del estudiante con sus comentarios
     const entregas = await Entrega.findAll({

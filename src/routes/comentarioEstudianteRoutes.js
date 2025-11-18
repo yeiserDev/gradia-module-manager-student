@@ -4,10 +4,16 @@
 
 const express = require('express');
 const router = express.Router();
+const authenticate = require('../middlewares/authenticate');
+const authorize = require('../middlewares/authorize');
 const {
   getComentariosPorEntrega,
   getMisComentarios
 } = require('../controllers/comentarioEstudianteController');
+
+// 🔒 Todas las rutas requieren autenticación y rol ESTUDIANTE
+router.use(authenticate);
+router.use(authorize(['ESTUDIANTE', 'ADMIN']));
 
 // ==========================================
 // RUTAS DE COMENTARIOS

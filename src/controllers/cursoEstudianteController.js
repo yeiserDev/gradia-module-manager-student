@@ -1,5 +1,6 @@
 // src/controllers/cursoEstudianteController.js
 const { Curso, Unidad, Actividad, Entrega, Inscripcion } = require('../models/associations');
+const { verificarInscripcionEnCurso } = require('../utils/inscripcionHelper');
 
 const cursoEstudianteController = {
 
@@ -84,6 +85,17 @@ const cursoEstudianteController = {
   getDetalleCurso: async (req, res) => {
     try {
       const { cursoId } = req.params;
+      const userId = req.user.id;
+
+      // Verificar que el estudiante esté inscrito en el curso
+      const estaInscrito = await verificarInscripcionEnCurso(userId, cursoId);
+
+      if (!estaInscrito) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes acceso a este curso. Solo puedes ver cursos donde estás inscrito.'
+        });
+      }
 
       const curso = await Curso.findByPk(cursoId, {
         include: [

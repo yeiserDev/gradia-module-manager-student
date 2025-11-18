@@ -2,11 +2,13 @@
 
 ## 📌 Información del Proyecto
 - **Proyecto:** GradIA - Module Manager Student
-- **Versión:** 1.0.0
+- **Versión:** 2.0.0
 - **Puerto:** 3001
 - **Base URL:** `http://localhost:3001`
 - **Base de Datos:** PostgreSQL en Render.com (compartida con backend docente)
 - **Total de Endpoints:** 10 funcionales
+- **Autenticación:** ✅ JWT (HS256)
+- **Control de Acceso:** ✅ Basado en Inscripciones + RBAC
 
 ---
 
@@ -40,40 +42,44 @@ CURSO (Vista)
 
 ### 1️⃣ VISUALIZACIÓN DE CURSOS (4 endpoints)
 
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/student/cursos` | Ver todos mis cursos activos | ⚠️ Simulada |
-| GET | `/api/student/cursos/:cursoId` | Detalle completo de un curso | ⚠️ Simulada |
-| GET | `/api/student/cursos/:cursoId/actividades` | Actividades de un curso con estado | ⚠️ Simulada |
-| GET | `/api/student/cursos/actividades/pendientes` | Dashboard de actividades urgentes | ⚠️ Simulada |
+| Método | Endpoint | Descripción | Auth | Control de Acceso |
+|--------|----------|-------------|------|-------------------|
+| GET | `/api/student/cursos` | Ver todos mis cursos inscritos | ✅ JWT | Solo cursos inscritos |
+| GET | `/api/student/cursos/:cursoId` | Detalle completo de un curso | ✅ JWT | Solo si está inscrito |
+| GET | `/api/student/cursos/:cursoId/actividades` | Actividades de un curso con estado | ✅ JWT | Solo si está inscrito |
+| GET | `/api/student/cursos/actividades/pendientes` | Dashboard de actividades urgentes | ✅ JWT | Todos los cursos inscritos |
 
 **Características especiales:**
+- ✅ Solo muestra cursos donde el estudiante está inscrito (tabla `inscripcion`)
 - ✅ Solo muestra cursos activos
 - ✅ Calcula `dias_restantes` en tiempo real
 - ✅ Asigna `prioridad` automática (urgente, alta, media, normal)
 - ✅ Muestra `estado_para_estudiante` (pendiente, vencida)
 - ✅ Estadísticas agregadas por curso
+- ✅ Validación automática de inscripción en `getDetalleCurso`
 
 ---
 
 ### 2️⃣ GESTIÓN DE ENTREGAS (6 endpoints)
 
-| Método | Endpoint | Descripción | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/student/entregas/dashboard` | Estadísticas personales del estudiante | ⚠️ Simulada |
-| GET | `/api/student/entregas` | Historial completo de mis entregas | ⚠️ Simulada |
-| GET | `/api/student/entregas/:entregaId` | Detalle de una entrega específica | ⚠️ Simulada |
-| POST | `/api/student/entregas` | Crear nueva entrega (enviar tarea) | ⚠️ Simulada |
-| PUT | `/api/student/entregas/:entregaId` | Actualizar entrega (nuevo intento) | ⚠️ Simulada |
-| DELETE | `/api/student/entregas/:entregaId` | Eliminar entrega (antes de fecha límite) | ⚠️ Simulada |
+| Método | Endpoint | Descripción | Auth | Control de Acceso |
+|--------|----------|-------------|------|-------------------|
+| GET | `/api/student/entregas/dashboard` | Estadísticas personales del estudiante | ✅ JWT | Solo propias entregas |
+| GET | `/api/student/entregas` | Historial completo de mis entregas | ✅ JWT | Solo propias entregas |
+| GET | `/api/student/entregas/:entregaId` | Detalle de una entrega específica | ✅ JWT | Solo si es dueño |
+| POST | `/api/student/entregas` | Crear nueva entrega (enviar tarea) | ✅ JWT | Solo si inscrito en el curso |
+| PUT | `/api/student/entregas/:entregaId` | Actualizar entrega (nuevo intento) | ✅ JWT | Solo si es dueño |
+| DELETE | `/api/student/entregas/:entregaId` | Eliminar entrega (antes de fecha límite) | ✅ JWT | Solo si es dueño |
 
 **Características especiales:**
+- ✅ **Validación de inscripción** - Solo puede crear entregas en actividades de cursos donde está inscrito
 - ✅ Validación de fecha límite
 - ✅ Prevención de duplicados en actividades individuales
 - ✅ Permite múltiples intentos (num_intento)
 - ✅ Calcula `puntualidad` (a_tiempo, tardio)
 - ✅ Información adicional: `puede_reenviar`, `dias_diferencia`
 - ✅ Versionado de archivos por intento
+- ✅ Usa `req.user.id` de JWT (no query params inseguros)
 
 ---
 
@@ -81,11 +87,15 @@ CURSO (Vista)
 
 ### POST /api/student/entregas
 ```
+✅ JWT token válido requerido
+✅ Rol ESTUDIANTE o ADMIN requerido
 ✅ id_actividad requerido
+✅ El estudiante debe estar inscrito en el curso de la actividad
 ✅ La actividad debe existir
 ✅ La fecha límite no debe haber pasado
 ✅ No permitir duplicados en actividades individuales
 ✅ Crear ArchivoEntrega por cada archivo
+✅ Usar usuarioId desde JWT (req.user.id)
 ```
 
 ### PUT /api/student/entregas/:entregaId
@@ -245,16 +255,26 @@ src/
 
 ## 🔐 SEGURIDAD
 
-### Estado Actual
-⚠️ **Autenticación simulada** mediante `?usuarioId=1`
+### ✅ Implementado:
+- ✅ **Autenticación JWT (HS256)** - Todos los endpoints protegidos
+- ✅ **Middleware de autorización** - `authorize(['ESTUDIANTE', 'ADMIN'])`
+- ✅ **Validación de roles** - Solo estudiantes y admins pueden acceder
+- ✅ **Validación de inscripciones** - Solo acceso a cursos/actividades inscritas
+- ✅ **Helper functions** - verificarInscripcionEnCurso, verificarInscripcionEnActividad, obtenerCursoDeActividad
+- ✅ **Usuario desde JWT** - Usa `req.user.id` en lugar de query params
 
-### Pendiente para Producción
-- [ ] JWT Authentication
-- [ ] Middleware de autorización
-- [ ] Validación de roles (estudiante)
+### 🔒 Flujo de Seguridad:
+1. **Login** → Backend de Autenticación genera JWT
+2. **Cada Request** → Frontend envía JWT en header `Authorization: Bearer <token>`
+3. **Middleware `authenticate`** → Valida JWT y extrae usuario (`req.user`)
+4. **Middleware `authorize`** → Verifica rol del usuario (ESTUDIANTE o ADMIN)
+5. **Helper `verificarInscripcionEnActividad`** → Valida acceso a la actividad/curso
+6. **Controller** → Ejecuta lógica de negocio si todas las validaciones pasan
+
+### ⚠️ Pendiente para Producción:
 - [ ] Upload de archivos real (Multer)
-- [ ] Validación de inscripciones
 - [ ] Rate limiting
+- [ ] Validación de schemas con Joi/Yup
 
 ---
 
@@ -266,6 +286,7 @@ src/
 
 ---
 
-**Última actualización:** 2025-10-11
-**Estado:** ✅ 100% funcional (módulos básicos)
-**Versión:** 1.0.0
+**Última actualización:** 2025-01-17
+**Estado:** ✅ 100% funcional y seguro (módulos básicos)
+**Versión:** 2.0.0
+**Seguridad:** JWT (HS256) + RBAC + Control de Inscripciones

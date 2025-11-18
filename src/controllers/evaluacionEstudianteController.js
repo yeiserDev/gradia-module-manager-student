@@ -18,7 +18,7 @@ const evaluacionEstudianteController = {
   getEvaluacionByEntrega: async (req, res) => {
     try {
       const { entregaId } = req.params;
-      const { usuarioId = 1 } = req.query;
+      const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
       // Verificar que la entrega pertenece al estudiante
       const entrega = await Entrega.findOne({
@@ -125,7 +125,7 @@ const evaluacionEstudianteController = {
   // 2. Ver historial de todas mis calificaciones
   getMisCalificaciones: async (req, res) => {
     try {
-      const { usuarioId = 1 } = req.query;
+      const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
       const evaluaciones = await Evaluacion.findAll({
         include: [
@@ -333,7 +333,7 @@ const evaluacionEstudianteController = {
   // 4. Estadísticas de evaluaciones
   getEstadisticasEvaluaciones: async (req, res) => {
     try {
-      const { usuarioId = 1 } = req.query;
+      const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
       // Obtener todas las evaluaciones del estudiante
       const evaluaciones = await Evaluacion.findAll({

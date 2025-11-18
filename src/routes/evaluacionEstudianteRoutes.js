@@ -1,7 +1,13 @@
 // src/routes/evaluacionEstudianteRoutes.js
 const express = require('express');
 const router = express.Router();
+const authenticate = require('../middlewares/authenticate');
+const authorize = require('../middlewares/authorize');
 const evaluacionEstudianteController = require('../controllers/evaluacionEstudianteController');
+
+// 🔒 Todas las rutas requieren autenticación y rol ESTUDIANTE
+router.use(authenticate);
+router.use(authorize(['ESTUDIANTE', 'ADMIN']));
 
 // ==========================================
 // RUTAS PARA EVALUACIONES - ESTUDIANTE

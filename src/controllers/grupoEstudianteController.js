@@ -10,14 +10,7 @@ const { Op } = require('sequelize');
 // ==========================================
 const getMisGrupos = async (req, res) => {
   try {
-    const { usuarioId } = req.query;
-
-    if (!usuarioId) {
-      return res.status(400).json({
-        success: false,
-        message: 'El campo usuarioId es obligatorio'
-      });
-    }
+    const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
     // Obtener todos los grupos donde el estudiante es miembro
     const miembros = await MiembroGrupo.findAll({
@@ -85,14 +78,7 @@ const getMisGrupos = async (req, res) => {
 const getDetalleGrupo = async (req, res) => {
   try {
     const { grupoId } = req.params;
-    const { usuarioId } = req.query;
-
-    if (!usuarioId) {
-      return res.status(400).json({
-        success: false,
-        message: 'El campo usuarioId es obligatorio'
-      });
-    }
+    const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
     // Verificar que el grupo existe
     const grupo = await Grupo.findByPk(grupoId, {

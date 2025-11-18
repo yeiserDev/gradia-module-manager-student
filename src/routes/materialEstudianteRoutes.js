@@ -4,11 +4,17 @@
 
 const express = require('express');
 const router = express.Router();
+const authenticate = require('../middlewares/authenticate');
+const authorize = require('../middlewares/authorize');
 const {
   getMaterialesPorActividad,
   getDetalleMaterial,
   getMaterialesPorCurso
 } = require('../controllers/materialEstudianteController');
+
+// 🔒 Todas las rutas requieren autenticación y rol ESTUDIANTE
+router.use(authenticate);
+router.use(authorize(['ESTUDIANTE', 'ADMIN']));
 
 // ==========================================
 // RUTAS DE MATERIALES

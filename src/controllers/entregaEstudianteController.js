@@ -1,6 +1,7 @@
 // src/controllers/entregaEstudianteController.js
 const { Actividad, Entrega, ArchivoEntrega, Unidad, Curso } = require('../models/associations');
 const sequelize = require('../config/database');
+const { verificarInscripcionEnActividad } = require('../utils/inscripcionHelper');
 
 const entregaEstudianteController = {
 
@@ -166,17 +167,27 @@ const entregaEstudianteController = {
   // CREAR nueva entrega (ENVIAR TAREA)
   createEntrega: async (req, res) => {
     try {
-      const { 
-        id_actividad, 
-        id_usuario = 1, // Temporal: simular usuario logueado
+      const {
+        id_actividad,
         archivos = [] // Array de archivos subidos
       } = req.body;
+      const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
       // Validar campos obligatorios
       if (!id_actividad) {
         return res.status(400).json({
           success: false,
           message: 'El campo id_actividad es obligatorio'
+        });
+      }
+
+      // Verificar que el estudiante esté inscrito en el curso de la actividad
+      const estaInscrito = await verificarInscripcionEnActividad(usuarioId, id_actividad);
+
+      if (!estaInscrito) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes acceso a esta actividad. Solo puedes entregar actividades de cursos donde estás inscrito.'
         });
       }
 
@@ -208,7 +219,7 @@ const entregaEstudianteController = {
         const entregaExistente = await Entrega.findOne({
           where: {
             id_actividad,
-            id_usuario
+            id_usuario: usuarioId
           }
         });
 
@@ -224,7 +235,7 @@ const entregaEstudianteController = {
       // Crear la entrega
       const nuevaEntrega = await Entrega.create({
         id_actividad,
-        id_usuario: actividad.tipo_actividad === 'individual' ? id_usuario : null,
+        id_usuario: actividad.tipo_actividad === 'individual' ? usuarioId : null,
         id_grupo: actividad.tipo_actividad === 'grupal' ? null : null, // TODO: implementar grupos
         num_intento: 1,
         fecha_entrega: new Date(),
@@ -281,16 +292,16 @@ const entregaEstudianteController = {
   updateEntrega: async (req, res) => {
     try {
       const { entregaId } = req.params;
-      const { 
-        id_usuario = 1, // Temporal: simular usuario logueado
+      const {
         archivos = []
       } = req.body;
+      const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
       // Buscar la entrega existente
       const entrega = await Entrega.findOne({
         where: {
           id_entrega: entregaId,
-          id_usuario
+          id_usuario: usuarioId
         },
         include: [
           {
