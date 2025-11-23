@@ -2,6 +2,19 @@
 const { Actividad, Entrega, ArchivoEntrega, Unidad, Curso } = require('../models/associations');
 const sequelize = require('../config/database');
 const { verificarInscripcionEnActividad } = require('../utils/inscripcionHelper');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+
+// Extensiones de video permitidas
+const EXTENSIONES_VIDEO = ["mp4", "mov", "avi", "mkv", "webm", "m4v"];
+
+// Cliente AWS
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_KEY,
+  },
+});
 
 const entregaEstudianteController = {
 
@@ -45,10 +58,10 @@ const entregaEstudianteController = {
       const entregasConEstado = entregas.map(entrega => {
         const fechaLimite = new Date(entrega.actividad.fecha_limite);
         const fechaEntrega = new Date(entrega.fecha_entrega);
-        
+
         let estado = 'entregado';
         let puntualidad = 'a_tiempo';
-        
+
         if (entrega.actividad.fecha_limite && fechaEntrega > fechaLimite) {
           puntualidad = 'tardio';
         }
@@ -135,10 +148,10 @@ const entregaEstudianteController = {
       // Calcular información adicional
       const fechaLimite = new Date(entrega.actividad.fecha_limite);
       const fechaEntrega = new Date(entrega.fecha_entrega);
-      
+
       const infoAdicional = {
         puntualidad: entrega.actividad.fecha_limite && fechaEntrega > fechaLimite ? 'tardio' : 'a_tiempo',
-        dias_diferencia: entrega.actividad.fecha_limite ? 
+        dias_diferencia: entrega.actividad.fecha_limite ?
           Math.ceil((fechaEntrega - fechaLimite) / (1000 * 60 * 60 * 24)) : null,
         puede_reenviar: true, // Lógica para determinar si puede hacer otro intento
         total_archivos: entrega.archivos.length,
@@ -222,126 +235,79 @@ const entregaEstudianteController = {
   createEntrega: async (req, res) => {
     try {
       const { id_actividad } = req.body;
-      const usuarioId = req.user.id; // Usuario autenticado desde JWT
-      const archivosSubidos = req.files || []; // Archivos de multer
+      const usuarioId = req.user.id;
 
-      console.log('📤 Creando entrega:', { id_actividad, usuarioId, archivos: archivosSubidos.length });
-
-      // Validar campos obligatorios
       if (!id_actividad) {
-        return res.status(400).json({
-          success: false,
-          message: 'El campo id_actividad es obligatorio'
-        });
+        return res.status(400).json({ success: false, message: "El campo id_actividad es obligatorio" });
       }
 
-      // 🚧 TEMPORAL: Validaciones comentadas porque requieren acceso a la base de datos de Teacher
-      // TODO: Implementar validación mediante API call al backend de Teacher
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: "Debes subir al menos un archivo" });
+      }
 
-      // // Verificar que el estudiante esté inscrito en el curso de la actividad
-      // const estaInscrito = await verificarInscripcionEnActividad(usuarioId, id_actividad);
-      // if (!estaInscrito) {
-      //   return res.status(403).json({
-      //     success: false,
-      //     message: 'No tienes acceso a esta actividad. Solo puedes entregar actividades de cursos donde estás inscrito.'
-      //   });
-      // }
-
-      // // Verificar que la actividad existe y está disponible
-      // const actividad = await Actividad.findByPk(id_actividad);
-      // if (!actividad) {
-      //   return res.status(404).json({
-      //     success: false,
-      //     message: 'La actividad especificada no existe'
-      //   });
-      // }
-
-      // // Verificar fecha límite
-      // if (actividad.fecha_limite) {
-      //   const ahora = new Date();
-      //   const fechaLimite = new Date(actividad.fecha_limite);
-      //   if (ahora > fechaLimite) {
-      //     return res.status(400).json({
-      //       success: false,
-      //       message: 'La fecha límite para esta actividad ya ha pasado',
-      //       fecha_limite: actividad.fecha_limite
-      //     });
-      //   }
-      // }
-
-      // Verificar si ya existe una entrega para esta actividad (siempre asumimos individual)
       const entregaExistente = await Entrega.findOne({
-        where: {
-          id_actividad,
-          id_usuario: usuarioId
-        }
+        where: { id_actividad, id_usuario: usuarioId }
       });
 
       if (entregaExistente) {
         return res.status(400).json({
           success: false,
-          message: 'Ya tienes una entrega para esta actividad. Usa PUT para actualizar.',
+          message: "Ya tienes una entrega. Usa PUT para actualizar.",
           entrega_existente: entregaExistente.id_entrega
         });
       }
 
-      // Crear la entrega (asumimos siempre individual)
+      // Crear entrega
       const nuevaEntrega = await Entrega.create({
         id_actividad,
-        id_usuario: usuarioId, // Siempre asignamos al usuario (individual)
-        id_grupo: null, // TODO: implementar grupos
+        id_usuario: usuarioId,
+        id_grupo: null,
         num_intento: 1,
         fecha_entrega: new Date(),
         created_at: new Date(),
         updated_at: new Date()
       });
 
-      // Procesar archivos REALES subidos por multer
-      const archivosCreados = [];
-      for (const archivo of archivosSubidos) {
-        // Construir la URL del archivo
-        const fileUrl = `${req.protocol}://${req.get('host')}/uploads/submissions/${archivo.filename}`;
+      // Procesar archivo subido
+      const extension = req.file.originalname.split(".").pop().toLowerCase();
+      const isVideo = EXTENSIONES_VIDEO.includes(extension);
+      const carpeta = isVideo ? "videos" : "docs";
 
-        const nuevoArchivo = await ArchivoEntrega.create({
-          id_entrega: nuevaEntrega.id_entrega,
-          nombre_archivo: archivo.originalname,
-          tipo_archivo: archivo.mimetype,
-          url_archivo: fileUrl,
-          version: 1,
-          created_at: new Date()
-        });
-        archivosCreados.push(nuevoArchivo);
-        console.log('✅ Archivo guardado:', archivo.originalname, '->', fileUrl);
-      }
+      const filename = `${usuarioId}-${id_actividad}-${nuevaEntrega.id_entrega}-${Date.now()}.${extension}`;
 
-      // Obtener la entrega completa
-      const entregaCompleta = await Entrega.findByPk(nuevaEntrega.id_entrega, {
-        include: [
-          {
-            model: Actividad,
-            as: 'actividad',
-            attributes: ['nombre_actividad', 'tipo_actividad', 'fecha_limite']
-          },
-          {
-            model: ArchivoEntrega,
-            as: 'archivos'
-          }
-        ]
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.AWS_BUCKET,
+          Key: `${carpeta}/${filename}`,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype,
+        })
+      );
+
+      const fileUrl = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${carpeta}/${filename}`;
+
+      await ArchivoEntrega.create({
+        id_entrega: nuevaEntrega.id_entrega,
+        nombre_archivo: filename,
+        tipo_archivo: req.file.mimetype,
+        url_archivo: fileUrl,
+        version: 1,
+        created_at: new Date()
       });
 
-      res.status(201).json({
+      const entregaCompleta = await Entrega.findByPk(nuevaEntrega.id_entrega, {
+        include: [{ model: ArchivoEntrega, as: "archivos" }]
+      });
+
+      return res.status(201).json({
         success: true,
         data: entregaCompleta,
-        message: 'Entrega creada exitosamente'
+        message: "Entrega creada exitosamente"
       });
 
     } catch (error) {
-      console.error('Error al crear entrega:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor',
-        error: error.message
-      });
+      console.error("Error al crear entrega:", error);
+      return res.status(500).json({ success: false, message: "Error interno", error: error.message });
     }
   },
 
@@ -349,92 +315,134 @@ const entregaEstudianteController = {
   updateEntrega: async (req, res) => {
     try {
       const { entregaId } = req.params;
-      const {
-        archivos = []
-      } = req.body;
-      const usuarioId = req.user.id; // Usuario autenticado desde JWT
+      const usuarioId = req.user.id;
 
-      // Buscar la entrega existente
+      // Buscar la entrega
       const entrega = await Entrega.findOne({
         where: {
           id_entrega: entregaId,
           id_usuario: usuarioId
         },
-        include: [
-          {
-            model: Actividad,
-            as: 'actividad'
-          }
-        ]
+        include: [{ model: Actividad, as: "actividad" }]
       });
 
       if (!entrega) {
         return res.status(404).json({
           success: false,
-          message: 'Entrega no encontrada o no tienes permisos para actualizarla'
+          message: "Entrega no encontrada o no tienes permisos"
         });
       }
 
-      // Verificar fecha límite
-      if (entrega.actividad.fecha_limite) {
+      // Validar fecha límite
+      if (entrega.actividad?.fecha_limite) {
         const ahora = new Date();
         const fechaLimite = new Date(entrega.actividad.fecha_limite);
-        
+
         if (ahora > fechaLimite) {
           return res.status(400).json({
             success: false,
-            message: 'No puedes actualizar la entrega después de la fecha límite'
+            message: "No puedes actualizar después de la fecha límite"
           });
         }
       }
 
-      // Actualizar la entrega
+      // Obtener archivos actuales
+      const archivosEntrega = await ArchivoEntrega.findAll({
+        where: { id_entrega: entregaId }
+      });
+
+      // BLOQUEAR si existe VIDEO
+      const tieneVideo = archivosEntrega.some((archivo) => {
+        const ext = archivo.nombre_archivo.split(".").pop().toLowerCase();
+        return EXTENSIONES_VIDEO.includes(ext);
+      });
+
+      if (tieneVideo) {
+        return res.status(400).json({
+          success: false,
+          message: "No puedes editar una entrega que contiene un video."
+        });
+      }
+
+      // Validar archivo recibido
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "Debes subir un archivo para actualizar"
+        });
+      }
+
+      const extension = req.file.originalname.split(".").pop().toLowerCase();
+
+      if (EXTENSIONES_VIDEO.includes(extension)) {
+        return res.status(400).json({
+          success: false,
+          message: "No puedes actualizar usando un archivo de video."
+        });
+      }
+
+      // === ELIMINAR DOCUMENTOS ANTERIORES ===
+      for (const archivo of archivosEntrega) {
+        const key = archivo.url_archivo.split(".amazonaws.com/")[1];
+
+        try {
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.AWS_BUCKET,
+              Key: key
+            })
+          );
+        } catch (err) {
+          console.log("Error eliminando archivo previo:", err);
+        }
+      }
+
+      await ArchivoEntrega.destroy({
+        where: { id_entrega: entregaId }
+      });
+
+      // === SUBIR NUEVO DOCUMENTO ===
+      const timestamp = Date.now();
+      const filename = `${usuarioId}-${entrega.actividad.id_actividad}-${entregaId}-${timestamp}.${extension}`;
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.AWS_BUCKET,
+          Key: `docs/${filename}`,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype
+        })
+      );
+
+      const fileUrl = `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/docs/${filename}`;
+
+      await ArchivoEntrega.create({
+        id_entrega: entregaId,
+        nombre_archivo: filename,
+        tipo_archivo: req.file.mimetype,
+        url_archivo: fileUrl,
+        version: entrega.num_intento + 1,
+        created_at: new Date()
+      });
+
+      // Actualizar entrega
       await entrega.update({
         fecha_entrega: new Date(),
         num_intento: entrega.num_intento + 1,
         updated_at: new Date()
       });
 
-      // Agregar nuevos archivos (sin eliminar los anteriores por ahora)
-      const archivosCreados = [];
-      for (const archivo of archivos) {
-        const nuevoArchivo = await ArchivoEntrega.create({
-          id_entrega: entrega.id_entrega,
-          nombre_archivo: archivo.nombre,
-          tipo_archivo: archivo.tipo,
-          url_archivo: archivo.url || '/uploads/temp_file.pdf',
-          version: entrega.num_intento + 1,
-          created_at: new Date()
-        });
-        archivosCreados.push(nuevoArchivo);
-      }
-
-      // Obtener la entrega actualizada completa
-      const entregaActualizada = await Entrega.findByPk(entrega.id_entrega, {
-        include: [
-          {
-            model: Actividad,
-            as: 'actividad',
-            attributes: ['nombre_actividad', 'tipo_actividad', 'fecha_limite']
-          },
-          {
-            model: ArchivoEntrega,
-            as: 'archivos'
-          }
-        ]
-      });
-
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
-        data: entregaActualizada,
-        message: `Entrega actualizada exitosamente (Intento #${entrega.num_intento + 1})`
+        message: "Entrega actualizada correctamente",
+        url_archivo: fileUrl
       });
 
     } catch (error) {
-      console.error('Error al actualizar entrega:', error);
-      res.status(500).json({
+      console.error("Error actualizando entrega:", error);
+      return res.status(500).json({
         success: false,
-        message: 'Error interno del servidor',
+        message: "Error interno del servidor",
         error: error.message
       });
     }
@@ -470,7 +478,7 @@ const entregaEstudianteController = {
       if (entrega.actividad.fecha_limite) {
         const ahora = new Date();
         const fechaLimite = new Date(entrega.actividad.fecha_limite);
-        
+
         if (ahora > fechaLimite) {
           return res.status(400).json({
             success: false,
@@ -490,25 +498,72 @@ const entregaEstudianteController = {
         }
       );
 
-      // 2. Eliminar detalles de evaluación (si existen)
-      await sequelize.query(
-        'DELETE FROM evaluaciones.detalle_evaluacion WHERE id_evaluacion IN (SELECT id_evaluacion FROM evaluaciones.evaluacion WHERE id_entrega = :entregaId)',
-        {
-          replacements: { entregaId },
-          type: sequelize.QueryTypes.DELETE
-        }
-      );
-
-      // 3. Eliminar evaluaciones (si existen)
-      await sequelize.query(
-        'DELETE FROM evaluaciones.evaluacion WHERE id_entrega = :entregaId',
-        {
-          replacements: { entregaId },
-          type: sequelize.QueryTypes.DELETE
-        }
-      );
-
       // 4. Eliminar archivos asociados
+      // === ELIMINAR ARCHIVOS ASOCIADOS (solo documentos) === //
+
+      const s3 = new S3Client({
+        region: process.env.AWS_REGION,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY,
+          secretAccessKey: process.env.AWS_SECRET_KEY,
+        },
+      });
+
+      // Obtener archivos asociados a la entrega
+      const archivosEntrega = await ArchivoEntrega.findAll({
+        where: { id_entrega: entregaId }
+      });
+
+      // --- BLOQUEAR BORRADO SI EXISTE VIDEO ---
+      const extensionesVideo = ["mp4", "mov", "avi", "mkv", "webm", "m4v"];
+
+      const tieneVideo = archivosEntrega.some(archivo => {
+        const extension = archivo.nombre_archivo.split('.').pop().toLowerCase();
+        return (
+          extensionesVideo.includes(extension) ||
+          (archivo.tipo_archivo && archivo.tipo_archivo.startsWith("video/")) ||
+          archivo.url_archivo.includes("/videos/")
+        );
+      });
+
+      if (tieneVideo) {
+        return res.status(400).json({
+          success: false,
+          message: "No puedes eliminar una entrega que contiene un video."
+        });
+      }
+
+      // --- SI NO HAY VIDEO, ELIMINAR DOCUMENTOS DE S3 ---
+      for (const archivo of archivosEntrega) {
+        const extension = archivo.nombre_archivo.split('.').pop().toLowerCase();
+
+        const esVideo =
+          extensionesVideo.includes(extension) ||
+          (archivo.tipo_archivo && archivo.tipo_archivo.startsWith("video/")) ||
+          archivo.url_archivo.includes("/videos/");
+
+        if (!esVideo) {
+          console.log("🗑 Eliminando DOCUMENTO de S3:", archivo.url_archivo);
+
+          const key = archivo.url_archivo.split(".amazonaws.com/")[1];
+
+          try {
+            await s3.send(new DeleteObjectCommand({
+              Bucket: process.env.AWS_BUCKET,
+              Key: key,
+            }));
+            console.log("✔ Documento eliminado:", key);
+          } catch (err) {
+            console.error("❌ Error eliminando documento:", err);
+          }
+
+        } else {
+          console.log("🎥 Archivo es VIDEO, NO se elimina de S3:", archivo.nombre_archivo);
+        }
+      }
+
+
+
       await ArchivoEntrega.destroy({
         where: { id_entrega: entregaId }
       });
@@ -547,7 +602,7 @@ const entregaEstudianteController = {
       // Entregas de esta semana
       const inicioSemana = new Date();
       inicioSemana.setDate(inicioSemana.getDate() - 7);
-      
+
       const entregasEstaSemana = await Entrega.count({
         where: {
           id_usuario: usuarioId,
@@ -561,7 +616,7 @@ const entregaEstudianteController = {
         total_entregas_realizadas: misEntregas,
         entregas_esta_semana: entregasEstaSemana,
         actividades_disponibles: actividadesDisponibles,
-        progreso_general: actividadesDisponibles > 0 ? 
+        progreso_general: actividadesDisponibles > 0 ?
           Math.round((misEntregas / actividadesDisponibles) * 100) : 0
       };
 
