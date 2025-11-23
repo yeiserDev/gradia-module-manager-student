@@ -39,11 +39,6 @@ const Actividad = sequelize.define('Actividad', {
     allowNull: false,
     field: 'id_usuario'
   },
-  id_rubrica: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'id_rubrica'
-  },
   created_at: {
     type: DataTypes.DATE,
     allowNull: false,

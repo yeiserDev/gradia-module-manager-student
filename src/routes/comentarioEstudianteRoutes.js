@@ -7,6 +7,9 @@ const router = express.Router();
 const authenticate = require('../middlewares/authenticate');
 const authorize = require('../middlewares/authorize');
 const {
+  getComentariosByActividad,
+  createComentario,
+  deleteComentario,
   getComentariosPorEntrega,
   getMisComentarios
 } = require('../controllers/comentarioEstudianteController');
@@ -19,10 +22,13 @@ router.use(authorize(['ESTUDIANTE', 'ADMIN']));
 // RUTAS DE COMENTARIOS
 // ==========================================
 
-// GET - Obtener todos los comentarios del estudiante
-router.get('/', getMisComentarios);
+// Rutas principales (CRUD)
+router.get('/actividad/:actividadId', getComentariosByActividad);
+router.post('/', createComentario);
+router.delete('/:id', deleteComentario);
 
-// GET - Obtener comentarios de una entrega específica
+// Rutas legacy/específicas
+router.get('/', getMisComentarios);
 router.get('/entrega/:entregaId', getComentariosPorEntrega);
 
 module.exports = router;

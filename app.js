@@ -132,10 +132,11 @@ const startServer = async () => {
   try {
     // Probar conexión a la base de datos
     await testConnection();
-    
+
     // Iniciar servidor
     app.listen(PORT, () => {
       console.log(`🎓 VISTA ESTUDIANTE - Servidor corriendo en puerto ${PORT}`);
+      console.log(`🔄 Rutas de comentarios cargadas y listas.`);
       console.log(`📚 Health check: http://localhost:${PORT}/api/health`);
       console.log(`🌐 Base URL: http://localhost:${PORT}`);
     });

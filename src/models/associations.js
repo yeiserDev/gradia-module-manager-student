@@ -20,6 +20,11 @@ const NivelCriterio = require('./NivelCriterio');
 const RubricaCriterio = require('./RubricaCriterio');
 const Inscripcion = require('./Inscripcion');
 
+// Modelos de Usuario (READ ONLY - tabla compartida con auth_gradia)
+// Necesarios para mostrar quién hizo el comentario
+const Usuario = require('./Usuario');
+const Persona = require('./Persona');
+
 // ==========================================
 // RELACIONES DE INSCRIPCIÓN
 // ==========================================
@@ -32,6 +37,15 @@ Curso.hasMany(Inscripcion, {
 Inscripcion.belongsTo(Curso, {
   foreignKey: 'id_curso',
   as: 'curso'
+});
+
+Inscripcion.belongsTo(Usuario, {
+  foreignKey: 'id_usuario',
+  as: 'usuario'
+});
+Usuario.hasMany(Inscripcion, {
+  foreignKey: 'id_usuario',
+  as: 'inscripciones'
 });
 
 // ==========================================
@@ -82,7 +96,11 @@ ArchivoEntrega.belongsTo(Entrega, {
   as: 'entrega'
 });
 
-// Entrega → Comentario (Una entrega puede tener muchos comentarios)
+// ==========================================
+// RELACIONES DE COMENTARIOS
+// ==========================================
+
+// Entrega -> Comentario
 Entrega.hasMany(Comentario, {
   foreignKey: 'id_entrega',
   as: 'comentarios'
@@ -90,6 +108,50 @@ Entrega.hasMany(Comentario, {
 Comentario.belongsTo(Entrega, {
   foreignKey: 'id_entrega',
   as: 'entrega'
+});
+
+// Actividad -> Comentario
+Actividad.hasMany(Comentario, {
+  foreignKey: 'id_actividad',
+  as: 'comentarios'
+});
+Comentario.belongsTo(Actividad, {
+  foreignKey: 'id_actividad',
+  as: 'actividad'
+});
+
+// Usuario -> Comentario
+Usuario.hasMany(Comentario, {
+  foreignKey: 'id_usuario',
+  as: 'comentarios'
+});
+Comentario.belongsTo(Usuario, {
+  foreignKey: 'id_usuario',
+  as: 'usuario'
+});
+
+// Comentario -> Comentario (Respuestas)
+Comentario.hasMany(Comentario, {
+  foreignKey: 'parent_id',
+  as: 'respuestas'
+});
+Comentario.belongsTo(Comentario, {
+  foreignKey: 'parent_id',
+  as: 'padre'
+});
+
+// ==========================================
+// RELACIONES DE USUARIO
+// ==========================================
+
+// Usuario -> Persona
+Usuario.belongsTo(Persona, {
+  foreignKey: 'id_persona',
+  as: 'persona'
+});
+Persona.hasOne(Usuario, {
+  foreignKey: 'id_persona',
+  as: 'usuario'
 });
 
 // ==========================================
@@ -154,16 +216,6 @@ DetalleEvaluacion.belongsTo(Evaluacion, {
   as: 'evaluacion'
 });
 
-// Actividad → Rubrica
-Actividad.belongsTo(Rubrica, {
-  foreignKey: 'id_rubrica',
-  as: 'rubrica'
-});
-Rubrica.hasMany(Actividad, {
-  foreignKey: 'id_rubrica',
-  as: 'actividades'
-});
-
 // Rubrica ↔ Criterio (relación N:M a través de RubricaCriterio)
 Rubrica.belongsToMany(Criterio, {
   through: RubricaCriterio,
@@ -219,5 +271,7 @@ module.exports = {
   Criterio,
   NivelCriterio,
   RubricaCriterio,
-  Inscripcion
+  Inscripcion,
+  Usuario,
+  Persona
 };

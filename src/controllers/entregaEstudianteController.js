@@ -164,14 +164,68 @@ const entregaEstudianteController = {
     }
   },
 
+  // Obtener MI entrega para una actividad específica
+  getEntregaPorActividad: async (req, res) => {
+    try {
+      const { actividadId } = req.params;
+      const usuarioId = req.user.id;
+
+      console.log(`🔍 Buscando entrega del usuario ${usuarioId} para actividad ${actividadId}`);
+
+      const entrega = await Entrega.findOne({
+        where: {
+          id_actividad: actividadId,
+          id_usuario: usuarioId
+        },
+        include: [
+          {
+            model: ArchivoEntrega,
+            as: 'archivos',
+            attributes: ['id_archivo_entrega', 'nombre_archivo', 'tipo_archivo', 'url_archivo', 'created_at']
+          }
+        ]
+      });
+
+      if (!entrega) {
+        return res.status(404).json({
+          success: false,
+          message: 'No tienes una entrega para esta actividad',
+          data: null
+        });
+      }
+
+      console.log(`✅ Entrega encontrada:`, entrega.id_entrega, `con ${entrega.archivos.length} archivos`);
+      console.log(`📊 [DEBUG] Datos de la entrega:`, JSON.stringify({
+        id_entrega: entrega.id_entrega,
+        calificacion: entrega.calificacion,
+        retroalimentacion: entrega.retroalimentacion,
+        fecha_entrega: entrega.fecha_entrega
+      }));
+
+      res.status(200).json({
+        success: true,
+        data: entrega,
+        message: 'Entrega obtenida exitosamente'
+      });
+
+    } catch (error) {
+      console.error('Error al obtener entrega por actividad:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor',
+        error: error.message
+      });
+    }
+  },
+
   // CREAR nueva entrega (ENVIAR TAREA)
   createEntrega: async (req, res) => {
     try {
-      const {
-        id_actividad,
-        archivos = [] // Array de archivos subidos
-      } = req.body;
+      const { id_actividad } = req.body;
       const usuarioId = req.user.id; // Usuario autenticado desde JWT
+      const archivosSubidos = req.files || []; // Archivos de multer
+
+      console.log('📤 Creando entrega:', { id_actividad, usuarioId, archivos: archivosSubidos.length });
 
       // Validar campos obligatorios
       if (!id_actividad) {
@@ -181,80 +235,83 @@ const entregaEstudianteController = {
         });
       }
 
-      // Verificar que el estudiante esté inscrito en el curso de la actividad
-      const estaInscrito = await verificarInscripcionEnActividad(usuarioId, id_actividad);
+      // 🚧 TEMPORAL: Validaciones comentadas porque requieren acceso a la base de datos de Teacher
+      // TODO: Implementar validación mediante API call al backend de Teacher
 
-      if (!estaInscrito) {
-        return res.status(403).json({
-          success: false,
-          message: 'No tienes acceso a esta actividad. Solo puedes entregar actividades de cursos donde estás inscrito.'
-        });
-      }
+      // // Verificar que el estudiante esté inscrito en el curso de la actividad
+      // const estaInscrito = await verificarInscripcionEnActividad(usuarioId, id_actividad);
+      // if (!estaInscrito) {
+      //   return res.status(403).json({
+      //     success: false,
+      //     message: 'No tienes acceso a esta actividad. Solo puedes entregar actividades de cursos donde estás inscrito.'
+      //   });
+      // }
 
-      // Verificar que la actividad existe y está disponible
-      const actividad = await Actividad.findByPk(id_actividad);
-      if (!actividad) {
-        return res.status(404).json({
-          success: false,
-          message: 'La actividad especificada no existe'
-        });
-      }
+      // // Verificar que la actividad existe y está disponible
+      // const actividad = await Actividad.findByPk(id_actividad);
+      // if (!actividad) {
+      //   return res.status(404).json({
+      //     success: false,
+      //     message: 'La actividad especificada no existe'
+      //   });
+      // }
 
-      // Verificar fecha límite
-      if (actividad.fecha_limite) {
-        const ahora = new Date();
-        const fechaLimite = new Date(actividad.fecha_limite);
-        
-        if (ahora > fechaLimite) {
-          return res.status(400).json({
-            success: false,
-            message: 'La fecha límite para esta actividad ya ha pasado',
-            fecha_limite: actividad.fecha_limite
-          });
+      // // Verificar fecha límite
+      // if (actividad.fecha_limite) {
+      //   const ahora = new Date();
+      //   const fechaLimite = new Date(actividad.fecha_limite);
+      //   if (ahora > fechaLimite) {
+      //     return res.status(400).json({
+      //       success: false,
+      //       message: 'La fecha límite para esta actividad ya ha pasado',
+      //       fecha_limite: actividad.fecha_limite
+      //     });
+      //   }
+      // }
+
+      // Verificar si ya existe una entrega para esta actividad (siempre asumimos individual)
+      const entregaExistente = await Entrega.findOne({
+        where: {
+          id_actividad,
+          id_usuario: usuarioId
         }
-      }
+      });
 
-      // Verificar si ya existe una entrega para esta actividad (actividades individuales)
-      if (actividad.tipo_actividad === 'individual') {
-        const entregaExistente = await Entrega.findOne({
-          where: {
-            id_actividad,
-            id_usuario: usuarioId
-          }
+      if (entregaExistente) {
+        return res.status(400).json({
+          success: false,
+          message: 'Ya tienes una entrega para esta actividad. Usa PUT para actualizar.',
+          entrega_existente: entregaExistente.id_entrega
         });
-
-        if (entregaExistente) {
-          return res.status(400).json({
-            success: false,
-            message: 'Ya tienes una entrega para esta actividad. Usa PUT para actualizar.',
-            entrega_existente: entregaExistente.id_entrega
-          });
-        }
       }
 
-      // Crear la entrega
+      // Crear la entrega (asumimos siempre individual)
       const nuevaEntrega = await Entrega.create({
         id_actividad,
-        id_usuario: actividad.tipo_actividad === 'individual' ? usuarioId : null,
-        id_grupo: actividad.tipo_actividad === 'grupal' ? null : null, // TODO: implementar grupos
+        id_usuario: usuarioId, // Siempre asignamos al usuario (individual)
+        id_grupo: null, // TODO: implementar grupos
         num_intento: 1,
         fecha_entrega: new Date(),
         created_at: new Date(),
         updated_at: new Date()
       });
 
-      // Procesar archivos si los hay (simulado por ahora)
+      // Procesar archivos REALES subidos por multer
       const archivosCreados = [];
-      for (const archivo of archivos) {
+      for (const archivo of archivosSubidos) {
+        // Construir la URL del archivo
+        const fileUrl = `${req.protocol}://${req.get('host')}/uploads/submissions/${archivo.filename}`;
+
         const nuevoArchivo = await ArchivoEntrega.create({
           id_entrega: nuevaEntrega.id_entrega,
-          nombre_archivo: archivo.nombre,
-          tipo_archivo: archivo.tipo,
-          url_archivo: archivo.url || '/uploads/temp_file.pdf', // Temporal
+          nombre_archivo: archivo.originalname,
+          tipo_archivo: archivo.mimetype,
+          url_archivo: fileUrl,
           version: 1,
           created_at: new Date()
         });
         archivosCreados.push(nuevoArchivo);
+        console.log('✅ Archivo guardado:', archivo.originalname, '->', fileUrl);
       }
 
       // Obtener la entrega completa

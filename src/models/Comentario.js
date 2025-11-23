@@ -10,8 +10,13 @@ const Comentario = sequelize.define('Comentario', {
   },
   id_entrega: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     field: 'id_entrega'
+  },
+  id_actividad: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'id_actividad'
   },
   id_usuario: {
     type: DataTypes.INTEGER,
@@ -23,11 +28,10 @@ const Comentario = sequelize.define('Comentario', {
     allowNull: false,
     field: 'contenido'
   },
-  fecha_comentario: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-    field: 'fecha_comentario'
+  parent_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'parent_id'
   }
 }, {
   tableName: 'comentario',
