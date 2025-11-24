@@ -21,7 +21,7 @@ const entregaEstudianteController = {
   // Obtener MIS entregas realizadas
   getMisEntregas: async (req, res) => {
     try {
-      const usuarioId = req.user.id; // 🔧 Usuario autenticado desde JWT
+      const usuarioId = req.user.id; // Usuario autenticado desde JWT
 
       const entregas = await Entrega.findAll({
         where: { id_usuario: usuarioId },
